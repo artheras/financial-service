@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "source_repository": "artheras/aria-code",
+  "modules": [
+    {
+      "source_path": "src/aria_code/domain/performance_stats.py",
+      "source_commit": "1666c4a976bf3d0dd02311fb21ddc788dba92228",
+      "source_sha256": "50b0d7e22c8539ab3fbebdc0cdd46772de85dcb9b92da0ef642eac9ec53f9ad7",
+      "destination": "src/arthera_finance/performance_stats.py",
+      "destination_sha256": "50b0d7e22c8539ab3fbebdc0cdd46772de85dcb9b92da0ef642eac9ec53f9ad7"
+    },
+    {
+      "source_path": "src/aria_code/domain/backtest_engine.py",
+      "source_commit": "1666c4a976bf3d0dd02311fb21ddc788dba92228",
+      "source_sha256": "da9ca9fca8bb9d936f66f555780f4a3c4adfab2109a32939b24ee49693585357",
+      "destination": "src/arthera_finance/backtest_engine.py",
+      "destination_sha256": "7f0caeea10820eefe6764fd08c8a4fbe63e2fa4e7e5e6af529ae38a8f788dd4c",
+      "excluded_host_adapters": [
+        "load_bars",
+        "strategy_order_to_intent"
+      ]
+    },
+    {
+      "source_path": "src/aria_code/datasources/sec_statements.py",
+      "source_commit": "1666c4a976bf3d0dd02311fb21ddc788dba92228",
+      "source_sha256": "0c91b5f4b29d04e967da3f80570a2216be36ecba6eadd127f62649bf18cf18a8",
+      "destination": "src/arthera_finance/sec_statements.py",
+      "destination_sha256": "0c91b5f4b29d04e967da3f80570a2216be36ecba6eadd127f62649bf18cf18a8"
+    },
+    {
+      "source_path": "src/aria_code/tools/enterprise_finance_tools.py",
+      "source_commit": "1666c4a976bf3d0dd02311fb21ddc788dba92228",
+      "source_sha256": "eff228122a9000aafd39136e709bfe8488efb3d108b66f8b1dec0f530dc8fd58",
+      "destination": "src/arthera_finance/statements.py",
+      "destination_sha256": "d65fe5e3c10df904962506dad48c09cf23b5b0afd21d611f63245a4c946a3747"
+    }
+  ],
+  "legacy_status": "Aria compatibility implementations remain until shared-service rollout and client parity are validated"
+}

@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "transport": "stdio",
+  "tools": [
+    {
+      "name": "financial_service_info",
+      "description": "Describe this service version and its host-selected network capability.",
+      "inputSchema": {
+        "properties": {},
+        "title": "financial_service_infoArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "financial_analyze_statements",
+      "description": "Compute margins and Dupont metrics from supplied statements, or host-enabled Yahoo/SEC data. Missing values stay unknown.",
+      "inputSchema": {
+        "properties": {
+          "company_name": {
+            "default": "",
+            "title": "Company Name",
+            "type": "string"
+          },
+          "financials": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Financials"
+          }
+        },
+        "title": "financial_analyze_statementsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_parse_sec_facts",
+      "description": "Parse supplied SEC companyfacts, keeping one aligned annual filing and its provenance. Does not access the network.",
+      "inputSchema": {
+        "properties": {
+          "facts": {
+            "additionalProperties": true,
+            "title": "Facts",
+            "type": "object"
+          }
+        },
+        "required": [
+          "facts"
+        ],
+        "title": "financial_parse_sec_factsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "financial_risk_metrics",
+      "description": "Calculate drawdown, total return and sample Sharpe on ordered equity values with an explicit annual-frequency assumption.",
+      "inputSchema": {
+        "properties": {
+          "equity": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Equity",
+            "type": "array"
+          },
+          "periods_per_year": {
+            "default": 252,
+            "title": "Periods Per Year",
+            "type": "number"
+          }
+        },
+        "required": [
+          "equity"
+        ],
+        "title": "financial_risk_metricsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "financial_backtest",
+      "description": "Simulate supplied daily OHLC bars with buy_hold or sma_cross; orders fill at the next open. Does not place trades.",
+      "inputSchema": {
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          },
+          "strategy": {
+            "default": "buy_hold",
+            "title": "Strategy",
+            "type": "string"
+          },
+          "starting_cash": {
+            "default": 100000,
+            "title": "Starting Cash",
+            "type": "number"
+          },
+          "commission": {
+            "default": 0.0005,
+            "title": "Commission",
+            "type": "number"
+          },
+          "slippage": {
+            "default": 0.0005,
+            "title": "Slippage",
+            "type": "number"
+          },
+          "fast": {
+            "default": 10,
+            "title": "Fast",
+            "type": "integer"
+          },
+          "slow": {
+            "default": 30,
+            "title": "Slow",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "financial_backtestArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "financial_market_history",
+      "description": "Fetch unadjusted daily Yahoo history only when the host enabled networking. Reports source and dates; not a live quote.",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "days": {
+            "default": 90,
+            "title": "Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "title": "financial_market_historyArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    }
+  ]
+}

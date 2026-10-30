@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=72"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arthera-financial-service"
+version = "0.1.0"
+description = "Shared financial calculations, disclosure evidence and read-only MCP tools"
+requires-python = ">=3.11"
+license = {text = "Apache-2.0"}
+dependencies = ["mcp>=1.12,<2"]
+
+[project.optional-dependencies]
+market = ["yfinance>=0.2.55"]
+dev = ["pytest>=8", "pytest-asyncio>=0.24"]
+
+[project.scripts]
+arthera-financial-service = "arthera_finance.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools]
+license-files = ["LICENSE", "NOTICE"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
