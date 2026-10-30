@@ -218,3 +218,13 @@ def test_worker_deadline_is_a_failed_query(profiles, monkeypatch):
         raise worker.subprocess.TimeoutExpired("broker-worker", 30)
     monkeypatch.setattr(worker.subprocess, "run", timeout)
     assert worker.call("mine", "account")["error_code"] == "broker_timeout"
+
+
+def test_windows_worker_keeps_runtime_path_case_insensitively(profiles, monkeypatch):
+    profiles([{"id": "mine", "type": "paper"}])
+    monkeypatch.setattr(worker, "os", SimpleNamespace(name="nt", environ={"Path": "runtime-path"}))
+    def run(*args, **kwargs):
+        assert kwargs["env"]["Path"] == "runtime-path"
+        return SimpleNamespace(returncode=0, stdout=b'{"success":false}')
+    monkeypatch.setattr(worker.subprocess, "run", run)
+    assert worker.call("mine", "account")["success"] is False

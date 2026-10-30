@@ -27,7 +27,11 @@ def call(connection_id, operation, status="all", limit=50):
                    "FINANCIAL_SERVICE_HOME", "FINANCIAL_SERVICE_NETWORK",
                    "FINANCIAL_SERVICE_BROKERS_ENABLED"}
         allowed.update(profile.get("credentials", {}).values())
-        environment = {k: v for k, v in os.environ.items() if k in allowed}
+        if os.name == "nt":
+            folded = {key.casefold() for key in allowed}
+            environment = {k: v for k, v in os.environ.items() if k.casefold() in folded}
+        else:
+            environment = {k: v for k, v in os.environ.items() if k in allowed}
     except Exception:
         return {"success": False, "error_code": "broker_configuration_invalid"}
     if not _QUERY_LOCK.acquire(blocking=False):
