@@ -7,21 +7,18 @@ is needed for supplied-data calculations.
 
 ## Install from source
 
-Python 3.11+. This initial source version is not a published PyPI release.
+Python 3.11+. Install from source:
 
 ```sh
 git clone https://github.com/artheras/financial-service.git
 cd financial-service
-# While the initial PR is under review:
-git checkout feat/standalone-finance-service
 python3 -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
 .venv/bin/python -m pytest -q
 ```
 
 On Windows use .venv/Scripts/python.exe and .venv/Scripts/arthera-financial-service.exe.
-After the PR merges, main contains the same source and the branch checkout is
-unnecessary. Install `.[market]` for Yahoo market data. The plain package keeps
+Install `.[market]` for Yahoo market data. The plain package keeps
 the calculation cores free of NumPy/pandas/yfinance requirements.
 
 ## Tools
@@ -50,7 +47,7 @@ codex mcp add arthera-finance -- /absolute/path/to/financial-service/.venv/bin/a
 claude mcp add --transport stdio arthera-finance -- /absolute/path/to/financial-service/.venv/bin/arthera-financial-service
 ```
 
-For the updated Aria Code host:
+For Aria Code:
 
 ```text
 /mcp finance install "/absolute/path/to/financial-service/.venv/bin/python"
@@ -58,7 +55,7 @@ For the updated Aria Code host:
 /mcp tools
 ```
 
-Other Aria versions can merge the server entry from the Finance plugin's mcp.json
+You can also merge the server entry from the Finance plugin's mcp.json
 and restart. The plugin catalogue at https://github.com/artheras/aria-plugins
 contains Claude .mcp.json, Codex TOML, Aria configuration, and the finance skill.
 Skill installation alone does not install this service.
@@ -67,19 +64,5 @@ Networking is off by default. To enable external financial data, explicitly set
 FINANCIAL_SERVICE_NETWORK=1 in the server's host environment; configure
 EDGAR_USER_AGENT with your company and contact email for SEC requests. Do not
 pass network permission as a tool argument. No live data is fetched in CI.
-This first version is a local stdio service, not an authenticated hosted endpoint.
+The service uses local stdio transport.
 
-## Migration and compatibility
-
-The first transferred modules are corporate statement analysis, SEC annual
-disclosure parsing, calendar-aware performance statistics and the event-driven
-backtest core. They derive from Aria Code main 1666c4a and retain Apache licensing,
-NOTICE and independently checked tests. migration.json records original paths and
-hashes. Host data-loading and live-broker order adapters were intentionally excluded
-from the shared backtest core.
-
-Existing Aria financial handlers remain as compatibility implementations during
-rollout. This source version does not yet move all data sources, financial agents,
-report generators, factor tools or broker adapters. Future caller migration must
-preserve schemas, numerical results, source provenance and authorization before
-old implementations are removed. Plugin wrappers contain no financial algorithms.
