@@ -1,0 +1,49 @@
+Aria Code
+Copyright 2025-2026 Arthera
+
+This product includes software developed at Arthera.
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+
+Licensing history
+-----------------
+
+Aria Code has been published under three licenses. Each grant is per-version
+and none of them is retroactive, so the terms that apply to you depend on the
+version you obtained:
+
+  up to and including 4.1.2   MIT License
+  4.2.0 through 4.4.5         Business Source License 1.1 (source-available,
+                              not an Open Source license; converts to Apache
+                              License 2.0 on 2030-06-23)
+  0.44.0 and later            Apache License, Version 2.0
+
+The 0.x line is not a downgrade from 4.x. It is a deliberate restart of the
+version counter on the Codex model — minor is the release count, patch is
+reserved for hotfixes — adopted so that releases move in small increments
+instead of the large jumps the 4.x line had taken. See docs/VERSIONING.md.
+
+The BSL releases remain available under BSL 1.1; relicensing them is not
+possible, because a license grant already made to a recipient cannot be
+withdrawn. Apache 2.0 applies to this version and every version after it.
+
+
+Scope
+-----
+
+This license covers everything in this repository, with no carve-outs. That
+includes the CLI, the agent runtime, the tool and permission system, MCP
+integration, the repo map, the acceptance gate, the eval framework, the SDK,
+the domain packs -- and, as of this version, packages/quant_engine, whose
+source is still in the tree.
+
+That last point is deliberate to state rather than leave implied, because a
+grant made on a released version cannot be withdrawn afterwards.
+
+What remains under packages/quant_engine is stochastic/, sports/, backtest/ and
+portfolio/. Six further subpackages -- services/, agent_runtime/, risk/,
+analysis/, strategies/ and mcp_server.py -- are not in this repository and are
+not covered by this license; the code here imports them optionally and degrades
+when they are absent. See CLOSING_SOURCE.md and
+tests/test_engine_boundary.py, which pins that split.
