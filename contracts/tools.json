@@ -187,6 +187,105 @@
         "idempotentHint": true,
         "openWorldHint": true
       }
+    },
+    {
+      "name": "financial_broker_connections",
+      "description": "List only this local host's configured connection identifiers; never returns credentials.",
+      "inputSchema": {
+        "properties": {},
+        "title": "financial_broker_connectionsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "financial_broker_account",
+      "description": "Read the selected host-owned broker account, masking the account identifier. Never places orders.",
+      "inputSchema": {
+        "properties": {
+          "connection_id": {
+            "title": "Connection Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "connection_id"
+        ],
+        "title": "financial_broker_accountArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_broker_positions",
+      "description": "Read positions from a configured account in this user's service process.",
+      "inputSchema": {
+        "properties": {
+          "connection_id": {
+            "title": "Connection Id",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "connection_id"
+        ],
+        "title": "financial_broker_positionsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_broker_orders",
+      "description": "Read existing broker orders; cannot place, modify, cancel or confirm an order.",
+      "inputSchema": {
+        "properties": {
+          "connection_id": {
+            "title": "Connection Id",
+            "type": "string"
+          },
+          "status": {
+            "default": "all",
+            "title": "Status",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "connection_id"
+        ],
+        "title": "financial_broker_ordersArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
     }
   ]
 }

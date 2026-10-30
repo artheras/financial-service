@@ -17,6 +17,7 @@ def local_address(sock, address):
 @pytest.fixture(autouse=True)
 def offline(monkeypatch):
     monkeypatch.setenv('FINANCIAL_SERVICE_NETWORK', '0')
+    monkeypatch.setenv('FINANCIAL_SERVICE_BROKERS_ENABLED', '0')
     connect, connect_ex = socket.socket.connect, socket.socket.connect_ex
     def guarded(sock, address):
         if not local_address(sock, address):
