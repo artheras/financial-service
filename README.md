@@ -21,6 +21,8 @@ On Windows use .venv/Scripts/python.exe and .venv/Scripts/arthera-financial-serv
 Install `.[market]` for Yahoo market data. The plain package keeps
 the calculation cores free of NumPy/pandas/yfinance requirements.
 
+Broker account, position and order queries are available through the [broker connection guide](docs/broker-connections.md). Each user runs an isolated local service process.
+
 ## Tools
 
 | Tool | Input and behavior |
@@ -31,6 +33,10 @@ the calculation cores free of NumPy/pandas/yfinance requirements.
 | financial_risk_metrics | Ordered positive equity values; sample Sharpe, drawdown, total return and annual-frequency assumption |
 | financial_backtest | Supplied daily OHLC bars, buy_hold/sma_cross, next-open fills, fees and slippage; simulation only |
 | financial_market_history | Host-enabled Yahoo unadjusted daily history, source/as_of/retrieved_at; not a live quote |
+| financial_broker_connections | This host user's configured connection identifiers; no credentials |
+| financial_broker_account | Read a selected account and mask its identifier |
+| financial_broker_positions | Read selected-account positions |
+| financial_broker_orders | Read existing orders; cannot place or cancel orders |
 
 Missing metrics remain unknown. A successful calculation does not independently
 verify caller-supplied data. Backtests return only the last 100 equity/trade entries,

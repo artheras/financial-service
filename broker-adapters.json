@@ -1,0 +1,71 @@
+{
+  "source_repository": "artheras/aria-code",
+  "source_commit": "67050e057ca8a6933f6a55a16d11bb2822ec30ff",
+  "modules": [
+    {
+      "source_path": "src/aria_code/brokers/base.py",
+      "source_sha256": "d59469f8e208d36746c5ef8496083efc6a5ab5f4301b72172f34ef6ac50abfb3",
+      "destination": "src/arthera_finance/brokers/base.py"
+    },
+    {
+      "source_path": "src/aria_code/brokers/paper_broker.py",
+      "source_sha256": "a8cd24a5fc4005eb2e0c0312821e37e7f2006cd9642fe65faa5bb141352df415",
+      "destination": "src/arthera_finance/brokers/paper_broker.py"
+    },
+    {
+      "source_path": "src/aria_code/brokers/cn/tiger_broker.py",
+      "source_sha256": "cee0d997f36deda98115f3deeb4d2c42084ffb2f43de4bb584de3b4e4e4a034a",
+      "destination": "src/arthera_finance/brokers/cn/tiger_broker.py"
+    },
+    {
+      "source_path": "src/aria_code/brokers/cn/futu_broker.py",
+      "source_sha256": "139f4e10ae208a8c194883980dbcd137647336aae5baf0c794741850785ece6a",
+      "destination": "src/arthera_finance/brokers/cn/futu_broker.py"
+    },
+    {
+      "source_path": "src/aria_code/brokers/cn/__init__.py",
+      "source_sha256": "0962e45db8926ca0b3444bd2b915a24eb1bc230a26f72a8f2d17154ac5077db9",
+      "destination": "src/arthera_finance/brokers/cn/__init__.py"
+    },
+    {
+      "source_path": "src/aria_code/brokers/cn/easytrader_broker.py",
+      "source_sha256": "86635a3cea80af7cc396bebd9c8f049afd287e2c4def231b412e4b42cf035854",
+      "destination": "src/arthera_finance/brokers/cn/easytrader_broker.py"
+    },
+    {
+      "source_path": "src/aria_code/brokers/cn/xtquant_broker.py",
+      "source_sha256": "b532bc361b6f960e90a0497bb68fda646a2c2b3a7c303ff0ab47c581903cf54c",
+      "destination": "src/arthera_finance/brokers/cn/xtquant_broker.py"
+    },
+    {
+      "source_path": "src/aria_code/brokers/cn/longbridge_broker.py",
+      "source_sha256": "da656615b94d4bfa21b8553211428f4510c3c546d5b77acf7a858eeed3f30b43",
+      "destination": "src/arthera_finance/brokers/cn/longbridge_broker.py"
+    },
+    {
+      "source_path": "src/aria_code/brokers/intl/__init__.py",
+      "source_sha256": "2d6236097c2c267fe98d0d5b9c08feaf86728741a0f6a68ec5963a987b4c346f",
+      "destination": "src/arthera_finance/brokers/intl/__init__.py"
+    },
+    {
+      "source_path": "src/aria_code/brokers/intl/webull_broker.py",
+      "source_sha256": "e25ef8611c78f4a7df19768857f2866dad69a7f38eb6bd4fc25257ef12f37ef9",
+      "destination": "src/arthera_finance/brokers/intl/webull_broker.py"
+    },
+    {
+      "source_path": "src/aria_code/brokers/intl/ibkr_broker.py",
+      "source_sha256": "a984967dbbbe8f5442da2b4d4bcc2a72e73fb1c5ef3e2a4bb42b5f613c7288ba",
+      "destination": "src/arthera_finance/brokers/intl/ibkr_broker.py"
+    },
+    {
+      "source_path": "src/aria_code/brokers/intl/alpaca_broker.py",
+      "source_sha256": "e64ee60a54cf7e210d534e508b759dba8dafb530aad0949a8b9d81746c3bbd9c",
+      "destination": "src/arthera_finance/brokers/intl/alpaca_broker.py"
+    },
+    {
+      "source_path": "src/aria_code/brokers/intl/trading212_broker.py",
+      "source_sha256": "1bac8fbc2e146430b493e6fa0af8169ae2769e937918eb37e6aa9d251b42bdf6",
+      "destination": "src/arthera_finance/brokers/intl/trading212_broker.py"
+    }
+  ]
+}

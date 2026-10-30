@@ -56,7 +56,8 @@ async def test_real_standard_mcp_stdio_session():
             names = {tool.name for tool in tools}
             assert names == {"financial_service_info", "financial_analyze_statements",
                              "financial_parse_sec_facts", "financial_risk_metrics",
-                             "financial_backtest", "financial_market_history"}
+                             "financial_backtest", "financial_market_history", "financial_broker_connections",
+                             "financial_broker_account", "financial_broker_positions", "financial_broker_orders"}
             assert all(tool.annotations.readOnlyHint for tool in tools)
             result = await session.call_tool("financial_analyze_statements", {
                 "financials": {"income_statement": {"revenue": 1000, "net_income": 100}}})
@@ -69,3 +70,27 @@ async def test_real_standard_mcp_stdio_session():
             assert json.loads(result.content[0].text)["error_code"] == "network_disabled"
             result = await session.call_tool("financial_risk_metrics", {"equity": [100, True]})
             assert result.isError
+
+
+async def test_real_mcp_broker_queries_use_only_host_profiles(tmp_path):
+    profile = tmp_path / "brokers.json"
+    profile.write_text(json.dumps({"brokers": [{"id": "mine", "type": "paper", "starting_cash": 1234}]}))
+    profile.chmod(0o600)
+    root = Path(__file__).resolve().parents[1]
+    env = dict(os.environ, FINANCIAL_SERVICE_NETWORK="0", FINANCIAL_SERVICE_BROKERS_ENABLED="1",
+               FINANCIAL_SERVICE_HOME=str(tmp_path),
+               PYTHONPATH=os.pathsep.join([str(root / "src"), os.environ.get("PYTHONPATH", "")]))
+    params = StdioServerParameters(command=sys.executable, args=["-m", "arthera_finance.server"], env=env)
+    async with stdio_client(params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            result = await session.call_tool("financial_broker_connections", {})
+            assert json.loads(result.content[0].text)["connections"][0]["connection_id"] == "mine"
+            result = await session.call_tool("financial_broker_account", {"connection_id": "mine"})
+            data = json.loads(result.content[0].text)
+            assert data["success"] and data["simulation"] and data["data"]["cash"] == 1234
+            for name in ("financial_broker_positions", "financial_broker_orders"):
+                result = await session.call_tool(name, {"connection_id": "mine"})
+                assert json.loads(result.content[0].text)["data"] == []
+            result = await session.call_tool("financial_broker_account", {"connection_id": "other-user"})
+            assert json.loads(result.content[0].text)["error_code"] == "connection_unavailable"

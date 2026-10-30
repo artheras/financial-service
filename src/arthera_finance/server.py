@@ -5,6 +5,8 @@ from mcp.types import ToolAnnotations
 from pydantic import StrictFloat, StrictInt
 from . import __version__, api
 from .sec_statements import parse_annual_statements, SECError
+from .brokers import service as broker_service
+from .brokers.worker import call as broker_query
 
 mcp = FastMCP("Arthera Financial Service")
 READ = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False)
@@ -29,7 +31,8 @@ def invoke(fn, *args, **kwargs):
 def financial_service_info() -> dict:
     """Describe this service version and its host-selected network capability."""
     return {"success": True, "version": __version__, "network_enabled": api.network_enabled(),
-            "transport": "stdio", "trading_enabled": False}
+            "transport": "stdio", "trading_enabled": False,
+            "broker_access_enabled": broker_service.enabled()}
 
 
 @mcp.tool(annotations=REMOTE_READ)
@@ -65,6 +68,30 @@ def financial_backtest(data: dict, strategy: str = "buy_hold", starting_cash: St
 def financial_market_history(symbol: str, days: StrictInt = 90) -> dict:
     """Fetch unadjusted daily Yahoo history only when the host enabled networking. Reports source and dates; not a live quote."""
     return invoke(api.market_history, symbol, days)
+
+
+@mcp.tool(annotations=READ)
+def financial_broker_connections() -> dict:
+    """List only this local host's configured connection identifiers; never returns credentials."""
+    return broker_service.connections()
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_broker_account(connection_id: str) -> dict:
+    """Read the selected host-owned broker account, masking the account identifier. Never places orders."""
+    return broker_query(connection_id, "account")
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_broker_positions(connection_id: str, limit: StrictInt = 50) -> dict:
+    """Read positions from a configured account in this user's service process."""
+    return broker_query(connection_id, "positions", limit=limit)
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_broker_orders(connection_id: str, status: str = "all", limit: StrictInt = 50) -> dict:
+    """Read existing broker orders; cannot place, modify, cancel or confirm an order."""
+    return broker_query(connection_id, "orders", status, limit)
 
 
 def main():
