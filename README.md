@@ -22,6 +22,9 @@ Install `.[market]` for Yahoo market data. The plain package keeps
 the calculation cores free of NumPy/pandas/yfinance requirements.
 
 Broker account, position and order queries are available through the [broker connection guide](docs/broker-connections.md). Each user runs an isolated local service process.
+Run `python -m arthera_finance.doctor` in the service environment to check local
+broker setup without connecting or displaying credentials. Use `--json` for a
+structured report and `--connection ID` to check one configured connection.
 
 ## Tools
 

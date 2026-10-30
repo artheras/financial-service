@@ -24,6 +24,7 @@ dev = ["pytest>=8", "pytest-asyncio>=0.24"]
 
 [project.scripts]
 arthera-financial-service = "arthera_finance.server:main"
+arthera-finance-doctor = "arthera_finance.doctor:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

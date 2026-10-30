@@ -7,7 +7,8 @@ import stat
 
 BROKERS_CONFIG_PATH = Path(os.getenv("FINANCIAL_SERVICE_HOME") or "~/.arthera-finance").expanduser() / "brokers.json"
 SECRET_FIELDS = {"api_key", "api_secret", "app_key", "app_secret", "access_token",
-                 "private_key", "username", "password", "mfa", "device_id", "trade_password", "unlock_password"}
+                 "private_key", "username", "password", "mfa", "device_id", "trade_password", "unlock_password",
+                 "comm_password"}
 
 
 def load_profiles():

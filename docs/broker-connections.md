@@ -77,6 +77,25 @@ sessions. Removing a profile denies subsequent calls; changed host credentials
 require restarting the service. Revoke the broker authorization at the broker
 when disconnecting an external account.
 
+## Local setup diagnostics
+
+Run diagnostics with the same interpreter and environment as the MCP server:
+
+```sh
+python -m arthera_finance.doctor
+python -m arthera_finance.doctor --connection my_alpaca --json
+```
+
+The installed command arthera-finance-doctor provides the same interface. Exit
+code 0 means local configuration checks passed; code 1 means setup needs attention.
+Checks cover all ten adapters, optional SDK availability, permission flags,
+required settings, credential-variable presence and desktop platform support.
+The command never connects to a broker, imports an optional SDK, creates a ledger,
+or displays account identifiers, credential names or values. A passing local check
+does not verify package compatibility, token validity, gateway login or live data.
+Use a read-only account query to verify the authorized connection separately.
+EasyTrader's optional comm_password must also use a credentials environment reference.
+
 ## Platform accounts
 
 For a hosted multi-user product, bind every broker authorization to the
