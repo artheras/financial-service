@@ -13,13 +13,24 @@ READ = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=
 REMOTE_READ = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True)
 
 
+def raised_by_service(exc):
+    """Only this package's validation messages are written for clients; library text may hold private data."""
+    tb = exc.__traceback__
+    while tb is not None and tb.tb_next is not None:
+        tb = tb.tb_next
+    return tb is not None and tb.tb_frame.f_globals.get("__name__", "").startswith("arthera_finance.")
+
+
 def invoke(fn, *args, **kwargs):
     try:
         return fn(*args, **kwargs)
     except SECError as exc:
         return {"success": False, "error_code": exc.code, "error": str(exc)}
     except (ValueError, TypeError, KeyError, OverflowError) as exc:
-        return {"success": False, "error_code": "invalid_input", "error": str(exc)[:300]}
+        if raised_by_service(exc):
+            return {"success": False, "error_code": "invalid_input", "error": str(exc)[:300]}
+        logging.getLogger(__name__).warning("Financial tool rejected input: %s", type(exc).__name__)
+        return {"success": False, "error_code": "invalid_input", "error": "The supplied input could not be processed"}
     except TimeoutError:
         return {"success": False, "error_code": "source_timeout", "error": "Source deadline exceeded"}
     except Exception:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from ..base import BrokerBase, AccountInfo, Position, Order, OrderResult
+from ..base import BrokerBase, AccountInfo, Position, Order
 
 
 class EasyTraderBroker(BrokerBase):
@@ -134,27 +134,6 @@ class EasyTraderBroker(BrokerBase):
                 currency="CNY",
             ))
         return result
-
-    def place_order(self, symbol: str, side: str, quantity: float,
-                    order_type: str = "limit", price: float = 0.0, **kwargs) -> OrderResult:
-        self._require_connected()
-        try:
-            if side == "buy":
-                result = self._client.buy(security=symbol, price=price, amount=int(quantity))
-            else:
-                result = self._client.sell(security=symbol, price=price, amount=int(quantity))
-            oid = str(result.get("entrust_no", result.get("委托编号", "")))
-            return OrderResult(success=True, order_id=oid, broker_id=self.broker_id)
-        except Exception as e:
-            return OrderResult(success=False, message=str(e), broker_id=self.broker_id)
-
-    def cancel_order(self, order_id: str) -> bool:
-        self._require_connected()
-        try:
-            self._client.cancel_entrust(order_id)
-            return True
-        except Exception:
-            return False
 
     def _require_connected(self):
         if not self._connected or not self._client:

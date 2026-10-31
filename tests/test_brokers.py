@@ -228,3 +228,102 @@ def test_windows_worker_keeps_runtime_path_case_insensitively(profiles, monkeypa
         return SimpleNamespace(returncode=0, stdout=b'{"success":false}')
     monkeypatch.setattr(worker.subprocess, "run", run)
     assert worker.call("mine", "account")["success"] is False
+
+
+def test_worker_ignores_modules_planted_in_the_callers_workspace(profiles, tmp_path, monkeypatch):
+    workspace = tmp_path / "workspace"
+    (workspace / "alpaca").mkdir(parents=True)
+    marker = tmp_path / "planted-module-ran"
+    planted = f"open({str(marker)!r}, 'w').close()\nraise SystemExit(3)\n"
+    for name in ("json.py", "contextlib.py", "arthera_finance.py", "alpaca/__init__.py"):
+        (workspace / name).write_text(planted)
+    monkeypatch.chdir(workspace)
+    monkeypatch.setenv("PYTHONPATH", str(workspace))
+    profiles([{"id": "mine", "type": "paper", "starting_cash": 1234}])
+    result = worker.call("mine", "account")
+    assert result["success"] and result["data"]["cash"] == 1234
+    assert not marker.exists()
+
+
+@pytest.mark.parametrize("kind", sorted(ADAPTERS))
+def test_adapters_cannot_submit_or_cancel_orders(kind, monkeypatch):
+    from arthera_finance.brokers.base import BrokerBase, ReadOnlyBrokerError, TRADING_METHODS
+    cls = get_broker_class(kind)
+    for klass in cls.__mro__:
+        if klass is not BrokerBase:
+            assert not TRADING_METHODS.intersection(vars(klass)), klass
+    adapter = cls("test", {"account_id": "123456"})
+    # Any SDK or network access would fail the test before the read-only error.
+    monkeypatch.setattr(adapter, "_require_connected", lambda: pytest.fail("adapter touched"), raising=False)
+    with pytest.raises(ReadOnlyBrokerError):
+        adapter.place_order("TEST", "buy", 1, price=1.0)
+    with pytest.raises(ReadOnlyBrokerError):
+        adapter.cancel_order("1")
+
+
+def test_adapter_defining_a_trading_method_is_rejected():
+    from arthera_finance.brokers.base import BrokerBase
+    with pytest.raises(TypeError):
+        class Trading(BrokerBase):
+            def place_order(self, *args, **kwargs):
+                return "submitted"
+
+
+def test_tiger_account_mismatch_uses_its_account_field(profiles, monkeypatch):
+    profiles([{"id": "mine", "type": "tiger", "account": "EXPECTED"}])
+    monkeypatch.setenv("FINANCIAL_SERVICE_NETWORK", "1")
+    seen = {}
+    class Adapter:
+        def __init__(self, **kw):
+            seen.update(kw["config"])
+        def connect(self):
+            return True
+        def account_info(self):
+            return AccountInfo("mine", "tiger", "mine", "SOMEONE_ELSE")
+        def positions(self):
+            pytest.fail("cross-account positions queried")
+        def disconnect(self):
+            pass
+    monkeypatch.setattr(service, "get_broker_class", lambda kind: Adapter)
+    assert service.query("mine", "positions")["error_code"] == "broker_account_mismatch"
+    assert seen["account"] == "EXPECTED"
+
+
+def test_broker_errors_carry_fixed_human_text(profiles, monkeypatch):
+    assert all(isinstance(text, str) and text for text in service.ERRORS.values())
+    profiles([{"id": "mine", "type": "alpaca"}])
+    result = service.query("mine", "account")
+    assert result == {"success": False, "error_code": "network_disabled",
+                      "error": service.ERRORS["network_disabled"]}
+    assert worker.call("missing", "account")["error"] == service.ERRORS["connection_unavailable"]
+    monkeypatch.setenv("FINANCIAL_SERVICE_BROKERS_ENABLED", "0")
+    assert worker.call("mine", "account")["error"] == service.ERRORS["broker_access_disabled"]
+
+
+def test_paper_reads_do_not_create_a_ledger(profiles):
+    from arthera_finance.brokers import paper_broker
+    profiles([{"id": "mine", "type": "paper", "starting_cash": 50}])
+    assert service.query("mine", "positions")["success"]
+    assert service.query("mine", "account")["data"]["cash"] == 50
+    assert not paper_broker.PAPER_LEDGER_PATH.exists()
+
+
+def test_paper_ledger_requires_owner_only_regular_file(profiles, tmp_path):
+    from arthera_finance.brokers import paper_broker
+    if os.name == "nt":
+        pytest.skip("Windows ledger access is governed by host ACLs")
+    profiles([{"id": "mine", "type": "paper"}])
+    paper_broker.reset_paper_account("mine", starting_cash=10)
+    ledger = paper_broker.PAPER_LEDGER_PATH
+    assert ledger.stat().st_mode & 0o077 == 0
+    assert service.query("mine", "account")["data"]["cash"] == 10
+    ledger.chmod(0o644)
+    assert service.query("mine", "account")["error_code"] == "broker_query_failed"
+    target = tmp_path / "elsewhere.json"
+    ledger.replace(target)
+    target.chmod(0o600)
+    ledger.symlink_to(target)
+    assert service.query("mine", "account")["error_code"] == "broker_query_failed"
+    with pytest.raises((OSError, ValueError)):
+        paper_broker.reset_paper_account("mine")
+    assert target.stat().st_mode & 0o077 == 0 and ledger.is_symlink()

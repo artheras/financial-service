@@ -57,9 +57,14 @@ Store credential environment-variable names, not secret values:
 
 Set the service host's FINANCIAL_SERVICE_BROKERS_ENABLED=1 to permit account
 queries. Real broker connections also require FINANCIAL_SERVICE_NETWORK=1.
-Paper ledger queries work with networking off. The Finance MCP templates keep
-networking off, so set these values explicitly in the selected server's host
-environment and restart that server. Never paste credentials into chat.
+Paper ledger queries work with networking off. Set these values in the selected
+server's host environment, not in the MCP client configuration's env block, and
+restart that server. Never paste credentials into chat.
+
+Paper queries never create or change paper_ledger.json; a missing ledger reads as
+the profile's starting cash. Like brokers.json, the ledger must be a regular,
+owner-only file (not a symbolic link). Tiger profiles select their account with
+the account field, which is checked against the account the broker returns.
 
 The tools financial_broker_connections, financial_broker_account,
 financial_broker_positions and financial_broker_orders accept connection

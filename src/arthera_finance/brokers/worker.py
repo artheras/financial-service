@@ -7,18 +7,22 @@ import sys
 import threading
 
 _QUERY_LOCK = threading.Lock()
+# The worker holds broker credentials, so it must not import from the caller's
+# workspace: -I drops the current directory, PYTHONPATH and user site-packages,
+# and the working directory is the installed package root, not the workspace.
+_WORKER_CWD = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def call(connection_id, operation, status="all", limit=50):
     from .config import load_profiles
-    from .service import enabled
+    from .service import enabled, failure
     if not enabled():
-        return {"success": False, "error_code": "broker_access_disabled"}
+        return failure("broker_access_disabled")
     try:
         profile = next((p for p in load_profiles() if p["id"] == connection_id), None)
         if profile is None:
-            return {"success": False, "error_code": "connection_unavailable"}
-        allowed = {"PATH", "PYTHONPATH", "HOME", "USERPROFILE", "APPDATA", "LOCALAPPDATA",
+            return failure("connection_unavailable")
+        allowed = {"PATH", "HOME", "USERPROFILE", "APPDATA", "LOCALAPPDATA",
                    "SystemRoot", "SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "TMP", "TEMP",
                    "TMPDIR", "LANG", "LC_ALL", "PYTHONIOENCODING", "PYTHONUTF8", "PYTHONUNBUFFERED",
                    "SSL_CERT_FILE", "SSL_CERT_DIR", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE",
@@ -33,33 +37,33 @@ def call(connection_id, operation, status="all", limit=50):
         else:
             environment = {k: v for k, v in os.environ.items() if k in allowed}
     except Exception:
-        return {"success": False, "error_code": "broker_configuration_invalid"}
+        return failure("broker_configuration_invalid")
     if not _QUERY_LOCK.acquire(blocking=False):
-        return {"success": False, "error_code": "broker_busy"}
+        return failure("broker_busy")
     try:
         request = json.dumps({"connection_id": connection_id, "operation": operation,
                               "status": status, "limit": limit})
         if len(request.encode()) > 1024:
-            return {"success": False, "error_code": "invalid_broker_query"}
-        result = subprocess.run([sys.executable, "-m", "arthera_finance.brokers.worker"],
-                                input=request.encode(), stdout=subprocess.PIPE,
+            return failure("invalid_broker_query")
+        result = subprocess.run([sys.executable, "-I", "-m", "arthera_finance.brokers.worker"],
+                                input=request.encode(), stdout=subprocess.PIPE, cwd=_WORKER_CWD,
                                 stderr=subprocess.DEVNULL, timeout=30, check=False, env=environment)
         if result.returncode or len(result.stdout) > 1_000_000:
-            return {"success": False, "error_code": "broker_worker_failed"}
+            return failure("broker_worker_failed")
         data = json.loads(result.stdout)
         if not isinstance(data, dict) or type(data.get("success")) is not bool:
-            return {"success": False, "error_code": "broker_worker_failed"}
+            return failure("broker_worker_failed")
         return data
     except subprocess.TimeoutExpired:
-        return {"success": False, "error_code": "broker_timeout"}
+        return failure("broker_timeout")
     except Exception:
-        return {"success": False, "error_code": "broker_worker_failed"}
+        return failure("broker_worker_failed")
     finally:
         _QUERY_LOCK.release()
 
 
 def main():
-    from .service import query
+    from .service import failure, query
     try:
         raw = sys.stdin.buffer.read(1025)
         if len(raw) > 1024:
@@ -68,7 +72,7 @@ def main():
         with contextlib.redirect_stdout(sys.stderr):
             result = query(**request)
     except Exception:
-        result = {"success": False, "error_code": "invalid_broker_query"}
+        result = failure("invalid_broker_query")
     sys.stdout.write(json.dumps(result, allow_nan=False))
 
 

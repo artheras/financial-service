@@ -88,13 +88,20 @@ class PortfolioSummary:
 
 # ── 抽象基类 ───────────────────────────────────────────────────────────────────
 
+TRADING_METHODS = frozenset({"place_order", "cancel_order", "modify_order", "replace_order"})
+
+
+class ReadOnlyBrokerError(PermissionError):
+    """Raised by every order entry point; the service never submits orders."""
+
+
 class BrokerBase(ABC):
     """所有券商适配器的抽象基类。"""
 
     broker_type: str = "base"       # 子类覆盖: xtquant / ibkr / alpaca …
     broker_name: str = "券商"        # 展示名称
     market:      str = "CN"         # CN / US / HK / GLOBAL
-    read_only:   bool = False       # True = 只支持查询，不支持下单
+    read_only:   bool = True        # 服务端适配器始终只读
 
     def __init__(self, broker_id: str, config: Dict[str, Any]):
         self.broker_id = broker_id
@@ -157,28 +164,21 @@ class BrokerBase(ABC):
         status: "open" | "filled" | "cancelled" | "all"
         """
 
-    # ── 交易操作（需上层二次确认后才调用）──────────────────────────────────────
+    # ── 交易操作 ──────────────────────────────────────────────────────────────
+    # The service is read-only: adapters cannot define order methods, and the
+    # base methods fail before any SDK or network call.
 
-    def place_order(
-        self,
-        symbol:     str,
-        side:       str,        # "buy" | "sell"
-        quantity:   float,
-        order_type: str = "limit",
-        price:      float = 0.0,
-        **kwargs: Any,
-    ) -> OrderResult:
-        """
-        下单接口。默认返回不支持，子类覆盖。
-        ⚠️  此方法只应在用户明确确认后被调用。
-        """
-        if self.read_only:
-            return OrderResult(success=False, message=f"{self.broker_name} 为只读模式，不支持下单")
-        return OrderResult(success=False, message="此券商暂不支持程序化下单")
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        defined = TRADING_METHODS.intersection(vars(cls))
+        if defined:
+            raise TypeError(f"{cls.__name__} defines trading methods: {sorted(defined)}")
 
-    def cancel_order(self, order_id: str) -> bool:
-        """撤单。返回 True 表示成功。"""
-        return False
+    def place_order(self, *args: Any, **kwargs: Any) -> OrderResult:
+        raise ReadOnlyBrokerError("Financial Service broker connections are read-only")
+
+    def cancel_order(self, *args: Any, **kwargs: Any) -> bool:
+        raise ReadOnlyBrokerError("Financial Service broker connections are read-only")
 
     # ── 工具方法 ─────────────────────────────────────────────────────────────
 

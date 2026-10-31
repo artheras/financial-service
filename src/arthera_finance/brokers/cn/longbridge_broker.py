@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from ..base import BrokerBase, AccountInfo, Position, Order, OrderResult
+from ..base import BrokerBase, AccountInfo, Position, Order
 
 
 class LongbridgeBroker(BrokerBase):
@@ -126,35 +126,6 @@ class LongbridgeBroker(BrokerBase):
                 currency=str(getattr(o, "currency", "HKD")),
             ))
         return result
-
-    def place_order(self, symbol: str, side: str, quantity: float,
-                    order_type: str = "limit", price: float = 0.0, **kwargs) -> OrderResult:
-        self._require_connected()
-        try:
-            from longbridge.openapi import OrderSide, OrderType, TimeInForceType
-            from decimal import Decimal
-            lb_side = OrderSide.Buy if side == "buy" else OrderSide.Sell
-            lb_type = OrderType.MO if order_type == "market" else OrderType.LO
-            resp = self._trade_ctx.submit_order(
-                symbol=symbol,
-                order_type=lb_type,
-                side=lb_side,
-                submitted_quantity=int(quantity),
-                time_in_force=TimeInForceType.Day,
-                submitted_price=Decimal(str(price)) if price else None,
-            )
-            oid = str(getattr(resp, "order_id", ""))
-            return OrderResult(success=True, order_id=oid, broker_id=self.broker_id)
-        except Exception as e:
-            return OrderResult(success=False, message=str(e), broker_id=self.broker_id)
-
-    def cancel_order(self, order_id: str) -> bool:
-        self._require_connected()
-        try:
-            self._trade_ctx.cancel_order(order_id)
-            return True
-        except Exception:
-            return False
 
     def _require_connected(self):
         if not self._connected:

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 import math
 
-from ..base import BrokerBase, AccountInfo, Position, Order, OrderResult
+from ..base import BrokerBase, AccountInfo, Position, Order
 
 
 class IBKRBroker(BrokerBase):
@@ -153,35 +153,6 @@ class IBKRBroker(BrokerBase):
                 currency=contract.currency or "USD",
             ))
         return result
-
-    def place_order(self, symbol: str, side: str, quantity: float,
-                    order_type: str = "limit", price: float = 0.0, **kwargs) -> OrderResult:
-        if self._readonly:
-            return OrderResult(success=False, message="IBKR 账户配置为只读模式", broker_id=self.broker_id)
-        self._require_connected()
-        try:
-            from ib_insync import Stock, MarketOrder, LimitOrder
-            contract = Stock(symbol, "SMART", "USD")
-            if order_type == "market":
-                order = MarketOrder(action=side.upper(), totalQuantity=int(quantity))
-            else:
-                order = LimitOrder(action=side.upper(), totalQuantity=int(quantity), lmtPrice=price)
-            trade = self._ib.placeOrder(contract, order)
-            return OrderResult(success=True, order_id=str(trade.order.orderId), broker_id=self.broker_id)
-        except Exception as e:
-            return OrderResult(success=False, message=str(e), broker_id=self.broker_id)
-
-    def cancel_order(self, order_id: str) -> bool:
-        self._require_connected()
-        try:
-            open_trades = self._ib.openTrades()
-            for t in open_trades:
-                if str(t.order.orderId) == order_id:
-                    self._ib.cancelOrder(t.order)
-                    return True
-            return False
-        except Exception:
-            return False
 
     def _require_connected(self):
         if not self._connected or not self._ib:
