@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from ..base import BrokerBase, AccountInfo, Position, Order, OrderResult
+from ..base import BrokerBase, AccountInfo, Position, Order
 
 
 class TigerBroker(BrokerBase):
@@ -130,36 +130,6 @@ class TigerBroker(BrokerBase):
                 currency=str(getattr(o, "currency", "USD")),
             ))
         return result
-
-    def place_order(self, symbol: str, side: str, quantity: float,
-                    order_type: str = "limit", price: float = 0.0, **kwargs) -> OrderResult:
-        self._require_connected()
-        try:
-            from tigeropen.trade.domain.order import market_order, limit_order
-            from tigeropen.common.consts import Currency, Market
-
-            if order_type == "market":
-                order = market_order(
-                    account=self._account, symbol=symbol,
-                    action=side.upper(), quantity=int(quantity),
-                )
-            else:
-                order = limit_order(
-                    account=self._account, symbol=symbol,
-                    action=side.upper(), quantity=int(quantity), limit_price=price,
-                )
-            ret = self._trade_client.place_order(order)
-            return OrderResult(success=True, order_id=str(ret), broker_id=self.broker_id)
-        except Exception as e:
-            return OrderResult(success=False, message=str(e), broker_id=self.broker_id)
-
-    def cancel_order(self, order_id: str) -> bool:
-        self._require_connected()
-        try:
-            self._trade_client.cancel_order(account=self._account, id=int(order_id))
-            return True
-        except Exception:
-            return False
 
     def _require_connected(self):
         if not self._connected:

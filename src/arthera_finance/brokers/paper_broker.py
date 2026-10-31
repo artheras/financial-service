@@ -9,28 +9,27 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List
 
-from .base import AccountInfo, BrokerBase, Order, OrderResult, Position
-from .config import BROKERS_CONFIG_PATH
+from .base import AccountInfo, BrokerBase, Order, Position
+from .config import BROKERS_CONFIG_PATH, read_owner_only_json
 
 
 PAPER_LEDGER_PATH = BROKERS_CONFIG_PATH.parent / "paper_ledger.json"
 
 
-def _now_id(prefix: str) -> str:
-    return f"{prefix}_{int(time.time() * 1000)}"
-
-
 def _load_ledger() -> Dict[str, Any]:
+    # A missing ledger is an empty one; reads never create it.
     if not PAPER_LEDGER_PATH.exists():
         return {"accounts": {}}
-    data = json.loads(PAPER_LEDGER_PATH.read_text(encoding="utf-8"))
+    data = read_owner_only_json(PAPER_LEDGER_PATH, 8 * 1024 * 1024, "paper ledger")
     if not isinstance(data, dict) or not isinstance(data.get("accounts"), dict):
         raise ValueError("Paper ledger is invalid")
     return data
 
 
 def _save_ledger(data: Dict[str, Any]) -> None:
-    PAPER_LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    PAPER_LEDGER_PATH.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if PAPER_LEDGER_PATH.is_symlink():
+        raise ValueError("Paper ledger must not be a symbolic link")
     temporary = None
     try:
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=PAPER_LEDGER_PATH.parent,
@@ -56,27 +55,15 @@ class PaperBroker(BrokerBase):
         self.starting_cash = float(config.get("starting_cash", 100000.0) or 100000.0)
 
     def connect(self) -> bool:
-        ledger = _load_ledger()
-        accounts = ledger.setdefault("accounts", {})
-        if self.broker_id not in accounts:
-            accounts[self.broker_id] = {
-                "broker_id": self.broker_id,
-                "label": self.label,
-                "currency": self.currency,
-                "starting_cash": self.starting_cash,
-                "cash": self.starting_cash,
-                "positions": {},
-                "orders": [],
-                "created_at": int(time.time()),
-            }
-            _save_ledger(ledger)
+        _load_ledger()
         self._connected = True
         return True
 
     def ping(self) -> bool:
-        """Real liveness probe: the local ledger account must exist."""
+        """Real liveness probe: the local ledger must remain readable."""
         try:
-            return self.broker_id in (_load_ledger().get("accounts") or {})
+            _load_ledger()
+            return self._connected
         except Exception:
             return False
 
@@ -103,8 +90,7 @@ class PaperBroker(BrokerBase):
     def _account(self) -> Dict[str, Any]:
         if not self._connected:
             self.connect()
-        ledger = _load_ledger()
-        return ledger.setdefault("accounts", {}).setdefault(self.broker_id, {
+        return _load_ledger()["accounts"].get(self.broker_id) or {
             "broker_id": self.broker_id,
             "label": self.label,
             "currency": self.currency,
@@ -112,12 +98,7 @@ class PaperBroker(BrokerBase):
             "cash": self.starting_cash,
             "positions": {},
             "orders": [],
-        })
-
-    def _save_account(self, account: Dict[str, Any]) -> None:
-        ledger = _load_ledger()
-        ledger.setdefault("accounts", {})[self.broker_id] = account
-        _save_ledger(ledger)
+        }
 
     def account_info(self) -> AccountInfo:
         account = self._account()
@@ -191,73 +172,6 @@ class PaperBroker(BrokerBase):
                 currency=str(raw.get("currency", self.currency)),
             ))
         return out
-
-    def place_order(
-        self,
-        symbol: str,
-        side: str,
-        quantity: float,
-        order_type: str = "limit",
-        price: float = 0.0,
-        **kwargs: Any,
-    ) -> OrderResult:
-        symbol = str(symbol or "").strip().upper()
-        side = str(side or "").lower()
-        qty = float(quantity or 0.0)
-        if not symbol:
-            return OrderResult(False, message="symbol is required", broker_id=self.broker_id)
-        if side not in ("buy", "sell"):
-            return OrderResult(False, message="side must be buy or sell", broker_id=self.broker_id)
-        if qty <= 0:
-            return OrderResult(False, message="quantity must be positive", broker_id=self.broker_id)
-
-        account = self._account()
-        positions = account.setdefault("positions", {})
-        pos = dict(positions.get(symbol) or {})
-        current_price = float(price or pos.get("current_price", pos.get("cost_price", 0.0)) or 0.0)
-        if current_price <= 0:
-            return OrderResult(False, message="paper order requires a positive price", broker_id=self.broker_id)
-
-        cash = float(account.get("cash", 0.0) or 0.0)
-        notional = qty * current_price
-        existing_qty = float(pos.get("quantity", 0.0) or 0.0)
-        existing_cost = float(pos.get("cost_price", current_price) or current_price)
-
-        if side == "buy":
-            if notional > cash:
-                return OrderResult(False, message="paper cash insufficient", broker_id=self.broker_id)
-            new_qty = existing_qty + qty
-            new_cost = ((existing_qty * existing_cost) + notional) / new_qty if new_qty > 0 else current_price
-            pos.update({"quantity": new_qty, "cost_price": new_cost, "current_price": current_price})
-            account["cash"] = cash - notional
-            positions[symbol] = pos
-        else:
-            if qty > existing_qty:
-                return OrderResult(False, message="paper position insufficient", broker_id=self.broker_id)
-            new_qty = existing_qty - qty
-            account["cash"] = cash + notional
-            if new_qty <= 0:
-                positions.pop(symbol, None)
-            else:
-                pos.update({"quantity": new_qty, "cost_price": existing_cost, "current_price": current_price})
-                positions[symbol] = pos
-
-        order_id = _now_id("paper")
-        account.setdefault("orders", []).append({
-            "order_id": order_id,
-            "symbol": symbol,
-            "side": side,
-            "order_type": order_type,
-            "quantity": qty,
-            "filled_qty": qty,
-            "price": current_price,
-            "avg_price": current_price,
-            "status": "filled",
-            "created_at": int(time.time()),
-            "currency": str(account.get("currency", self.currency)),
-        })
-        self._save_account(account)
-        return OrderResult(True, order_id=order_id, message="paper order filled", broker_id=self.broker_id)
 
 
 def reset_paper_account(broker_id: str = "paper_main", starting_cash: float = 100000.0, currency: str = "USD") -> None:

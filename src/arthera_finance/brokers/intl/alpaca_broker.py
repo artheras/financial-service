@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from ..base import BrokerBase, AccountInfo, Position, Order, OrderResult
+from ..base import BrokerBase, AccountInfo, Position, Order
 
 
 class AlpacaBroker(BrokerBase):
@@ -125,33 +125,6 @@ class AlpacaBroker(BrokerBase):
                 currency="USD",
             ))
         return result
-
-    def place_order(self, symbol: str, side: str, quantity: float,
-                    order_type: str = "limit", price: float = 0.0, **kwargs) -> OrderResult:
-        self._require_connected()
-        try:
-            from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest
-            from alpaca.trading.enums import OrderSide, TimeInForce
-            alpaca_side = OrderSide.BUY if side == "buy" else OrderSide.SELL
-            if order_type == "market":
-                req = MarketOrderRequest(
-                    symbol=symbol, qty=quantity, side=alpaca_side, time_in_force=TimeInForce.DAY)
-            else:
-                req = LimitOrderRequest(
-                    symbol=symbol, qty=quantity, side=alpaca_side,
-                    limit_price=price, time_in_force=TimeInForce.DAY)
-            o = self._trading.submit_order(req)
-            return OrderResult(success=True, order_id=str(o.id), broker_id=self.broker_id)
-        except Exception as e:
-            return OrderResult(success=False, message=str(e), broker_id=self.broker_id)
-
-    def cancel_order(self, order_id: str) -> bool:
-        self._require_connected()
-        try:
-            self._trading.cancel_order_by_id(order_id)
-            return True
-        except Exception:
-            return False
 
     def _require_connected(self):
         if not self._connected or not self._trading:

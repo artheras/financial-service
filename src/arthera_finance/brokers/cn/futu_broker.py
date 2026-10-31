@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from ..base import BrokerBase, AccountInfo, Position, Order, OrderResult
+from ..base import BrokerBase, AccountInfo, Position, Order
 
 
 class FutuBroker(BrokerBase):
@@ -132,31 +132,6 @@ class FutuBroker(BrokerBase):
                 created_at=str(row.get("create_time", "")),
             ))
         return result
-
-    def place_order(self, symbol: str, side: str, quantity: float,
-                    order_type: str = "limit", price: float = 0.0, **kwargs) -> OrderResult:
-        self._require_connected()
-        ft = self._ft
-        trd_side = ft.TrdSide.BUY if side == "buy" else ft.TrdSide.SELL
-        ot = ft.OrderType.NORMAL if order_type == "limit" else ft.OrderType.MARKET
-        ret, data = self._trd_ctx.place_order(
-            price=price, qty=quantity, code=symbol,
-            trd_side=trd_side, order_type=ot,
-            trd_env=self._trd_env_val,
-        )
-        if ret != ft.RET_OK:
-            return OrderResult(success=False, message=str(data), broker_id=self.broker_id)
-        oid = str(data.iloc[0].get("order_id", ""))
-        return OrderResult(success=True, order_id=oid, broker_id=self.broker_id)
-
-    def cancel_order(self, order_id: str) -> bool:
-        self._require_connected()
-        ret, _ = self._trd_ctx.modify_order(
-            modify_order_op=self._ft.ModifyOrderOp.CANCEL,
-            order_id=int(order_id), qty=0, price=0,
-            trd_env=self._trd_env_val,
-        )
-        return ret == self._ft.RET_OK
 
     def _require_connected(self):
         if not self._connected or not self._trd_ctx:

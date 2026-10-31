@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from ..base import AccountInfo, BrokerBase, Order, OrderResult, Position
+from ..base import AccountInfo, BrokerBase, Order, Position
 
 DEFAULT_BASE_URL = "https://live.trading212.com/api/v0"
 
@@ -124,35 +124,6 @@ class Trading212Broker(BrokerBase):
                 currency="GBP",
             ))
         return result
-
-    def place_order(self, symbol: str, side: str, quantity: float,
-                    order_type: str = "limit", price: float = 0.0, **kwargs) -> OrderResult:
-        self._require_connected()
-        if order_type != "limit":
-            return OrderResult(success=False, message="Trading212 仅支持限价单", broker_id=self.broker_id)
-        if not price:
-            return OrderResult(success=False, message="限价单需要指定 price", broker_id=self.broker_id)
-        signed_qty = quantity if side == "buy" else -quantity
-        try:
-            resp = self._session.post(
-                f"{self._base_url}/equity/orders/limit",
-                json={"ticker": symbol, "quantity": signed_qty, "limitPrice": price, "timeValidity": "DAY"},
-                timeout=10,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            return OrderResult(success=True, order_id=str(data.get("id", "")), broker_id=self.broker_id)
-        except Exception as e:
-            return OrderResult(success=False, message=str(e), broker_id=self.broker_id)
-
-    def cancel_order(self, order_id: str) -> bool:
-        self._require_connected()
-        try:
-            resp = self._session.delete(f"{self._base_url}/equity/orders/{order_id}", timeout=10)
-            resp.raise_for_status()
-            return True
-        except Exception:
-            return False
 
 
 def _t212_order_status(raw: str) -> str:

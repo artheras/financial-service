@@ -49,7 +49,13 @@ There are no file-reading, broker execution, publishing or paid model tools.
 
 ## Connect clients
 
-Use the literal absolute executable path; it is installed in the service's venv.
+Use the literal absolute path of the arthera-financial-service console script in
+the service's venv. A bare command name only works when that venv's bin/Scripts
+directory is on the client's PATH, and otherwise starts whichever copy (if any) is
+found first, so prefer the absolute path in client configuration. If you launch a
+module directly, use `python -I -m arthera_finance.server` with the venv's absolute
+interpreter path: plain `python -m` puts the client's current directory, usually an
+untrusted workspace, first on the import path.
 
 ```sh
 codex mcp add arthera-finance -- /absolute/path/to/financial-service/.venv/bin/arthera-financial-service
@@ -69,9 +75,19 @@ and restart. The plugin catalogue at https://github.com/artheras/aria-plugins
 contains Claude .mcp.json, Codex TOML, Aria configuration, and the finance skill.
 Skill installation alone does not install this service.
 
-Networking is off by default. To enable external financial data, explicitly set
-FINANCIAL_SERVICE_NETWORK=1 in the server's host environment; configure
-EDGAR_USER_AGENT with your company and contact email for SEC requests. Do not
-pass network permission as a tool argument. No live data is fetched in CI.
-The service uses local stdio transport.
+Networking and broker access are off by default. To enable external financial
+data, explicitly set FINANCIAL_SERVICE_NETWORK=1 in the server's host environment;
+configure EDGAR_USER_AGENT with your company and contact email for SEC requests.
+Do not pass network permission as a tool argument. MCP client configurations
+should not hard-code FINANCIAL_SERVICE_NETWORK or FINANCIAL_SERVICE_BROKERS_ENABLED
+in the server's env block: a value there overrides the host environment, so a
+template that sets "0" silently disables what the host enabled. Leave both unset
+in client configuration and let the host environment decide; unset means off.
+No live data is fetched in CI. The service uses local stdio transport.
+
+Broker adapters are read-only: the service's adapter copies contain no order
+placement or cancellation code, and the broker worker runs isolated (`python -I`)
+from the installed package directory so modules in the client's workspace are
+never imported next to broker credentials. Install the service into a venv, not
+with `pip install --user`, because isolated mode ignores user site-packages.
 

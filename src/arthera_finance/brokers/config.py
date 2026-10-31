@@ -11,17 +11,22 @@ SECRET_FIELDS = {"api_key", "api_secret", "app_key", "app_secret", "access_token
                  "comm_password"}
 
 
+def read_owner_only_json(path, max_bytes, name):
+    """Read a host-owned JSON file without following links or trusting shared files."""
+    fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    with os.fdopen(fd, "r", encoding="utf-8") as stream:
+        info = os.fstat(stream.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_size > max_bytes:
+            raise ValueError(f"Invalid {name} file")
+        if os.name != "nt" and (info.st_mode & 0o077 or info.st_uid != os.getuid()):
+            raise ValueError(f"The {name} file requires owner-only permissions")
+        return json.load(stream)
+
+
 def load_profiles():
     if not BROKERS_CONFIG_PATH.exists():
         return []
-    fd = os.open(BROKERS_CONFIG_PATH, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
-    with os.fdopen(fd, "r", encoding="utf-8") as stream:
-        info = os.fstat(stream.fileno())
-        if not stat.S_ISREG(info.st_mode) or info.st_size > 131072:
-            raise ValueError("Invalid broker profile file")
-        if os.name != "nt" and (info.st_mode & 0o077 or info.st_uid != os.getuid()):
-            raise ValueError("Broker profiles require owner-only permissions")
-        document = json.load(stream)
+    document = read_owner_only_json(BROKERS_CONFIG_PATH, 131072, "broker profile")
     if not isinstance(document, dict) or not isinstance(document.get("brokers"), list):
         raise ValueError("Broker profiles require a brokers array")
     rows = document["brokers"]
