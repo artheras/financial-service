@@ -35,6 +35,8 @@ structured report and `--connection ID` to check one configured connection.
 | financial_parse_sec_facts | Supplied companyfacts; one aligned annual filing, explicit provenance and stale-period labels |
 | financial_risk_metrics | Ordered positive equity values; sample Sharpe, drawdown, total return and annual-frequency assumption |
 | financial_backtest | Supplied daily OHLC bars, buy_hold/sma_cross, next-open fills, fees and slippage; simulation only |
+| financial_ichimoku | Ichimoku components and their states for supplied daily bars (at least 78); not a trade signal; no network |
+| financial_walk_forward | Walk-forward test of the MA crossover on supplied closes: in-sample parameter choice, out-of-sample result vs buy and hold, costs, no look-ahead; no network |
 | financial_market_history | Host-enabled Yahoo unadjusted daily history, source/as_of/retrieved_at; not a live quote |
 | financial_broker_connections | This host user's configured connection identifiers; no credentials |
 | financial_broker_account | Read a selected account and mask its identifier |
@@ -62,6 +64,7 @@ structured report and `--connection ID` to check one configured connection.
 | financial_news | Host-enabled headlines with source, time and link: akshare for A-shares, Finnhub (`FINNHUB_API_KEY`) or yfinance for tickers, NewsAPI (`NEWS_API_KEY`) for queries; no sentiment score |
 | financial_futures_snapshot | Host-enabled price, daily change and one-year range for commodity and index futures (gold, crude oil, ES=F, ...) |
 | financial_treasury_yields | Host-enabled 13-week, 5-, 10-, 30-year Treasury yields (CBOE indices) with dates |
+| financial_peer_comparison | Host-enabled trailing and forward PE, P/B, ROE, dividend yield and market cap against 1..7 caller-named peers, with distance from the peer median |
 | financial_datasource_status | Which sources have keys and packages on this host; no network request |
 
 Missing metrics remain unknown. A successful calculation does not independently

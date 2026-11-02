@@ -3,7 +3,7 @@ import logging
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from pydantic import StrictFloat, StrictInt
-from . import __version__, analytics, api
+from . import __version__, analytics, api, strategies
 from .sec_statements import parse_annual_statements, SECError
 from .brokers import service as broker_service
 from .brokers.worker import call as broker_query
@@ -93,6 +93,19 @@ def financial_optimize_weights(prices: dict[str, list[StrictFloat]], method: str
 def financial_quality_scores(current: dict, prior: dict | None = None) -> dict:
     """Piotroski F-score and Altman Z''-score from caller-supplied statement fields for the current and prior fiscal year. Missing inputs leave signals null; no verdict is given unless all are evaluated. No network."""
     return invoke(analytics.quality_scores, current, prior)
+
+
+@mcp.tool(annotations=READ)
+def financial_ichimoku(highs: list[StrictFloat], lows: list[StrictFloat], closes: list[StrictFloat]) -> dict:
+    """Ichimoku components (tenkan, kijun, both cloud spans) and their states for caller-supplied daily bars, oldest first, at least 78. Not a trade signal. No network."""
+    return invoke(strategies.ichimoku, highs, lows, closes)
+
+
+@mcp.tool(annotations=READ)
+def financial_walk_forward(closes: list[StrictFloat], windows: StrictInt = 5, train_ratio: StrictFloat = 0.7,
+                           commission: StrictFloat = 0.0005) -> dict:
+    """Walk-forward test of the moving-average crossover on caller-supplied closes: per window, choose fast/slow in sample, then measure out of sample against buy and hold, with costs and no look-ahead. No network."""
+    return invoke(strategies.walk_forward, closes, windows, train_ratio, commission)
 
 
 @mcp.tool(annotations=REMOTE_READ)
@@ -215,6 +228,12 @@ def financial_futures_snapshot(name: str) -> dict:
 def financial_treasury_yields() -> dict:
     """US Treasury 13-week, 5-, 10- and 30-year yields from the CBOE indices with dates, when the host enabled networking. The 2-year is in financial_us_macro."""
     return invoke(api.treasury_yields)
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_peer_comparison(symbol: str, peers: list[str]) -> dict:
+    """Trailing and forward PE, price to book, ROE, dividend yield and market cap of a company against 1..7 peers the caller names, with each metric's distance from the peer median, via yfinance, when the host enabled networking."""
+    return invoke(api.peer_comparison, symbol, peers)
 
 
 @mcp.tool(annotations=READ)

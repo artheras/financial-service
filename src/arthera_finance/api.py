@@ -388,3 +388,10 @@ def futures_snapshot(name):
 def treasury_yields():
     from . import futures
     return _network_gate() or futures.treasury_yields()
+
+
+# ── Peers ────────────────────────────────────────────────────────────────────
+
+def peer_comparison(symbol, peers):
+    from . import peers as peer_tools
+    return _network_gate() or peer_tools.peer_comparison(symbol, peers)
