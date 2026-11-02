@@ -81,6 +81,24 @@ def financial_market_history(symbol: str, days: StrictInt = 90) -> dict:
     return invoke(api.market_history, symbol, days)
 
 
+@mcp.tool(annotations=REMOTE_READ)
+def financial_quote(symbol: str) -> dict:
+    """Latest quote from the first configured source that answers (yfinance, Finnhub, Alpha Vantage, Tushare, AkShare), when the host enabled networking. Names its source; may be delayed."""
+    return invoke(api.market_quote, symbol)
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_fundamentals(symbol: str) -> dict:
+    """Valuation and growth metrics (PE, PB, ROE, growth, dividend yield, market value) from the first configured source that has them, when the host enabled networking."""
+    return invoke(api.market_fundamentals, symbol)
+
+
+@mcp.tool(annotations=READ)
+def financial_datasource_status() -> dict:
+    """Which market-data sources this host has keys and packages for. Makes no network request."""
+    return invoke(api.datasource_status)
+
+
 @mcp.tool(annotations=READ)
 def financial_broker_connections() -> dict:
     """List only this local host's configured connection identifiers; never returns credentials."""

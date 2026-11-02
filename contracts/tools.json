@@ -189,6 +189,67 @@
       }
     },
     {
+      "name": "financial_quote",
+      "description": "Latest quote from the first configured source that answers (yfinance, Finnhub, Alpha Vantage, Tushare, AkShare), when the host enabled networking. Names its source; may be delayed.",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "title": "financial_quoteArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_fundamentals",
+      "description": "Valuation and growth metrics (PE, PB, ROE, growth, dividend yield, market value) from the first configured source that has them, when the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "title": "financial_fundamentalsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_datasource_status",
+      "description": "Which market-data sources this host has keys and packages for. Makes no network request.",
+      "inputSchema": {
+        "properties": {},
+        "title": "financial_datasource_statusArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "financial_broker_connections",
       "description": "List only this local host's configured connection identifiers; never returns credentials.",
       "inputSchema": {

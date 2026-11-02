@@ -149,3 +149,93 @@ def market_history(symbol, days=90):
             "as_of": rows[-1]["date"], "interval": "1d", "adjusted": False,
             "retrieved_at": datetime.now(timezone.utc).isoformat(),
             "limitations": ["Historical daily bars; not a live quote or a total-return series."]}
+
+
+# ── Multi-source quotes and fundamentals (datasources/, from aria-code) ──────
+
+_QUOTE_SYMBOL = re.compile(r"[A-Za-z0-9.^=/-]{1,20}")
+_router = None
+
+
+def _datasource_router():
+    """The source router, built once; None when its dependencies are missing."""
+    global _router
+    if _router is None:
+        from .datasources.router import DataRouter
+        _router = DataRouter()
+    return _router
+
+
+def _plain(values: dict, limit: int = 40) -> dict:
+    """Only finite numbers and short strings leave the service."""
+    out = {}
+    for key, value in list(values.items())[:limit]:
+        if not isinstance(key, str) or len(key) > 40:
+            continue
+        if isinstance(value, bool) or value is None:
+            continue
+        if isinstance(value, (int, float)):
+            if math.isfinite(float(value)):
+                out[key] = value
+        elif isinstance(value, str):
+            out[key] = value[:200]
+    return out
+
+
+def _source_call(symbol: str, method: str):
+    if not network_enabled():
+        return None, {"success": False, "error_code": "network_disabled",
+                      "error": "The host must explicitly enable FINANCIAL_SERVICE_NETWORK=1"}
+    # Symbols reach source URLs: no path segments such as "..".
+    if not isinstance(symbol, str) or not _QUOTE_SYMBOL.fullmatch(symbol) or ".." in symbol or symbol[0] in "./":
+        raise ValueError("Invalid market symbol")
+    try:
+        router = _datasource_router()
+    except ImportError:
+        return None, {"success": False, "error_code": "dependency_missing",
+                      "error": "Install arthera-financial-service[market] (and [cn] for A-share sources)"}
+    return getattr(router, method)(symbol), None
+
+
+def market_quote(symbol):
+    result, error = _source_call(symbol, "quote")
+    if error:
+        return error
+    if result is None:
+        return {"success": False, "error_code": "source_unavailable",
+                "error": "No configured source returned a quote for this symbol"}
+    data = _plain(result.to_dict())
+    return {"success": True, "symbol": symbol, "data": data, "source": result.source or "unknown",
+            "retrieved_at": datetime.now(timezone.utc).isoformat(),
+            "limitations": ["As reported by the named source; may be delayed. Not an executable price."]}
+
+
+def market_fundamentals(symbol):
+    result, error = _source_call(symbol, "fundamentals")
+    if error:
+        return error
+    if result is None:
+        return {"success": False, "error_code": "source_unavailable",
+                "error": "No configured source returned fundamentals for this symbol"}
+    data = _plain(asdict(result))
+    data.pop("symbol", None)
+    return {"success": True, "symbol": symbol, "data": data, "source": result.source or "unknown",
+            "retrieved_at": datetime.now(timezone.utc).isoformat(),
+            "limitations": ["Missing metrics are omitted, not zero. Definitions differ between sources."]}
+
+
+def datasource_status():
+    """Which sources exist and whether their keys and packages are present; no network."""
+    keys = {"tushare": ["TUSHARE_TOKEN"], "fred": ["FRED_API_KEY"], "finnhub": ["FINNHUB_API_KEY", "FINNHUB_KEY"],
+            "alpha_vantage": ["ALPHA_VANTAGE_KEY", "ALPHAVANTAGE_KEY"]}
+    packages = {"akshare": "akshare", "tushare": "tushare", "yfinance": "yfinance"}
+    import importlib.util
+    rows = []
+    for name in ("yfinance", "akshare", "tushare", "finnhub", "alpha_vantage", "fred", "edgar", "world_bank"):
+        row = {"source": name}
+        if name in keys:
+            row["key_set"] = any(os.getenv(k) for k in keys[name])
+        if name in packages:
+            row["package_installed"] = importlib.util.find_spec(packages[name]) is not None
+        rows.append(row)
+    return {"success": True, "network_enabled": network_enabled(), "sources": rows}

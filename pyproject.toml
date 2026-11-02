@@ -11,7 +11,8 @@ license = {text = "Apache-2.0"}
 dependencies = ["mcp>=1.12,<2"]
 
 [project.optional-dependencies]
-market = ["yfinance>=0.2.55"]
+market = ["yfinance>=0.2.55", "pandas>=2"]
+cn = ["akshare>=1.14", "tushare>=1.4", "pandas>=2"]
 alpaca = ["alpaca-py>=0.35.0"]
 ibkr = ["ib_insync>=0.9.86"]
 futu = ["futu-api>=9.1.5108"]

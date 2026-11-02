@@ -18,7 +18,7 @@ python3 -m venv .venv
 ```
 
 On Windows use .venv/Scripts/python.exe and .venv/Scripts/arthera-financial-service.exe.
-Install `.[market]` for Yahoo market data. The plain package keeps
+Install `.[market]` for Yahoo market data and `.[cn]` for the A-share sources (AkShare, Tushare). Source keys (`TUSHARE_TOKEN`, `FINNHUB_API_KEY`, `ALPHA_VANTAGE_KEY`, `FRED_API_KEY`) are read only from the service's environment; the source order can be set in `$FINANCIAL_SERVICE_HOME/datasources.json`. The plain package keeps
 the calculation cores free of NumPy/pandas/yfinance requirements.
 
 Broker account, position and order queries are available through the [broker connection guide](docs/broker-connections.md). Each user runs an isolated local service process.
@@ -40,6 +40,9 @@ structured report and `--connection ID` to check one configured connection.
 | financial_broker_account | Read a selected account and mask its identifier |
 | financial_broker_positions | Read selected-account positions |
 | financial_broker_orders | Read existing orders; cannot place or cancel orders |
+| financial_quote | Host-enabled quote from the first configured source that answers (yfinance, Finnhub, Alpha Vantage, Tushare, AkShare); names its source, may be delayed |
+| financial_fundamentals | Host-enabled PE, PB, ROE, growth, dividend yield and market value; missing metrics are omitted |
+| financial_datasource_status | Which sources have keys and packages on this host; no network request |
 
 Missing metrics remain unknown. A successful calculation does not independently
 verify caller-supplied data. Backtests return only the last 100 equity/trade entries,
