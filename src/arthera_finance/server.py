@@ -199,6 +199,18 @@ def financial_crypto_ohlcv(symbol: str = "BTC/USDT", exchange: str = "binance", 
     return invoke(api.crypto_ohlcv, symbol, exchange, timeframe, limit)
 
 
+@mcp.tool(annotations=REMOTE_READ)
+def financial_futures_snapshot(name: str) -> dict:
+    """Latest price, daily change and one-year range for a commodity or index future (gold, crude oil, copper, wheat, S&P 500, or a yfinance ticker such as GC=F), when the host enabled networking."""
+    return invoke(api.futures_snapshot, name)
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_treasury_yields() -> dict:
+    """US Treasury 13-week, 5-, 10- and 30-year yields from the CBOE indices with dates, when the host enabled networking. The 2-year is in financial_us_macro."""
+    return invoke(api.treasury_yields)
+
+
 @mcp.tool(annotations=READ)
 def financial_datasource_status() -> dict:
     """Which market-data sources this host has keys and packages for. Makes no network request."""
