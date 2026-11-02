@@ -235,6 +235,44 @@
       }
     },
     {
+      "name": "financial_macro_series",
+      "description": "Macroeconomic time series from FRED (US10Y, CPI, UNRATE, FEDFUNDS, M2 or any series id) or the World Bank (GDP, CPI and indicator codes, by country), when the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "series": {
+            "title": "Series",
+            "type": "string"
+          },
+          "source": {
+            "default": "fred",
+            "title": "Source",
+            "type": "string"
+          },
+          "country": {
+            "default": "US",
+            "title": "Country",
+            "type": "string"
+          },
+          "years": {
+            "default": 10,
+            "title": "Years",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "series"
+        ],
+        "title": "financial_macro_seriesArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
       "name": "financial_datasource_status",
       "description": "Which market-data sources this host has keys and packages for. Makes no network request.",
       "inputSchema": {
