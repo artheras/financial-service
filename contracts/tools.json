@@ -805,6 +805,44 @@
       }
     },
     {
+      "name": "financial_futures_snapshot",
+      "description": "Latest price, daily change and one-year range for a commodity or index future (gold, crude oil, copper, wheat, S&P 500, or a yfinance ticker such as GC=F), when the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "financial_futures_snapshotArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_treasury_yields",
+      "description": "US Treasury 13-week, 5-, 10- and 30-year yields from the CBOE indices with dates, when the host enabled networking. The 2-year is in financial_us_macro.",
+      "inputSchema": {
+        "properties": {},
+        "title": "financial_treasury_yieldsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
       "name": "financial_datasource_status",
       "description": "Which market-data sources this host has keys and packages for. Makes no network request.",
       "inputSchema": {

@@ -376,3 +376,15 @@ def crypto_ohlcv(symbol="BTC/USDT", exchange="binance", timeframe="1d", limit=20
 def news(symbol="", query="", limit=10, days=7):
     from . import news as headlines
     return _network_gate() or headlines.news(symbol, query, limit, days)
+
+
+# ── Futures and Treasury yields ──────────────────────────────────────────────
+
+def futures_snapshot(name):
+    from . import futures
+    return _network_gate() or futures.futures_snapshot(name)
+
+
+def treasury_yields():
+    from . import futures
+    return _network_gate() or futures.treasury_yields()
