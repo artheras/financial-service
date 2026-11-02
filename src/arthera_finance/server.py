@@ -99,6 +99,24 @@ def financial_macro_series(series: str, source: str = "fred", country: str = "US
     return invoke(api.macro_series, series, source, country, years)
 
 
+@mcp.tool(annotations=REMOTE_READ)
+def financial_us_macro(indicator: str = "all", periods: StrictInt = 12) -> dict:
+    """US macro snapshot from FRED: GDP growth, CPI and core CPI year on year, fed funds, unemployment, 2y and 10y yields with the curve shape, M2, PPI and more; latest, previous and recent observations, when the host enabled networking."""
+    return invoke(api.us_macro, indicator, periods)
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_cn_macro(indicator: str = "all", periods: StrictInt = 12) -> dict:
+    """China macro snapshot via akshare: CPI, PPI, manufacturing and services PMI, GDP growth, LPR and money supply, when the host enabled networking and installed the [cn] extra."""
+    return invoke(api.cn_macro, indicator, periods)
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_central_bank_rates() -> dict:
+    """Policy rates for the Fed, ECB, UK, Japan and the PBOC LPR, each with its date and a stale flag, when the host enabled networking."""
+    return invoke(api.central_bank_rates)
+
+
 @mcp.tool(annotations=READ)
 def financial_datasource_status() -> dict:
     """Which market-data sources this host has keys and packages for. Makes no network request."""

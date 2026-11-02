@@ -273,6 +273,73 @@
       }
     },
     {
+      "name": "financial_us_macro",
+      "description": "US macro snapshot from FRED: GDP growth, CPI and core CPI year on year, fed funds, unemployment, 2y and 10y yields with the curve shape, M2, PPI and more; latest, previous and recent observations, when the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "indicator": {
+            "default": "all",
+            "title": "Indicator",
+            "type": "string"
+          },
+          "periods": {
+            "default": 12,
+            "title": "Periods",
+            "type": "integer"
+          }
+        },
+        "title": "financial_us_macroArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_cn_macro",
+      "description": "China macro snapshot via akshare: CPI, PPI, manufacturing and services PMI, GDP growth, LPR and money supply, when the host enabled networking and installed the [cn] extra.",
+      "inputSchema": {
+        "properties": {
+          "indicator": {
+            "default": "all",
+            "title": "Indicator",
+            "type": "string"
+          },
+          "periods": {
+            "default": 12,
+            "title": "Periods",
+            "type": "integer"
+          }
+        },
+        "title": "financial_cn_macroArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_central_bank_rates",
+      "description": "Policy rates for the Fed, ECB, UK, Japan and the PBOC LPR, each with its date and a stale flag, when the host enabled networking.",
+      "inputSchema": {
+        "properties": {},
+        "title": "financial_central_bank_ratesArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
       "name": "financial_datasource_status",
       "description": "Which market-data sources this host has keys and packages for. Makes no network request.",
       "inputSchema": {

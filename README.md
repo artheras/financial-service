@@ -43,6 +43,9 @@ structured report and `--connection ID` to check one configured connection.
 | financial_quote | Host-enabled quote from the first configured source that answers (yfinance, Finnhub, Alpha Vantage, Tushare, AkShare); names its source, may be delayed |
 | financial_fundamentals | Host-enabled PE, PB, ROE, growth, dividend yield and market value; missing metrics are omitted |
 | financial_macro_series | Host-enabled FRED series (US10Y, CPI, UNRATE, FEDFUNDS, M2 or any id) or World Bank indicators by country; last 500 observations |
+| financial_us_macro | Host-enabled US snapshot from FRED: GDP growth, CPI and core CPI YoY, fed funds, unemployment, 2y/10y yields and curve shape, M2, PPI |
+| financial_cn_macro | Host-enabled China snapshot via akshare (`[cn]` extra): CPI, PPI, PMI, GDP growth, LPR, money supply |
+| financial_central_bank_rates | Host-enabled Fed, ECB, UK SONIA, Japan call rate and PBOC LPR, each dated and flagged stale after 180 days |
 | financial_datasource_status | Which sources have keys and packages on this host; no network request |
 
 Missing metrics remain unknown. A successful calculation does not independently
