@@ -298,6 +298,89 @@
       }
     },
     {
+      "name": "financial_ichimoku",
+      "description": "Ichimoku components (tenkan, kijun, both cloud spans) and their states for caller-supplied daily bars, oldest first, at least 78. Not a trade signal. No network.",
+      "inputSchema": {
+        "properties": {
+          "highs": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Highs",
+            "type": "array"
+          },
+          "lows": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Lows",
+            "type": "array"
+          },
+          "closes": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Closes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "highs",
+          "lows",
+          "closes"
+        ],
+        "title": "financial_ichimokuArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "financial_walk_forward",
+      "description": "Walk-forward test of the moving-average crossover on caller-supplied closes: per window, choose fast/slow in sample, then measure out of sample against buy and hold, with costs and no look-ahead. No network.",
+      "inputSchema": {
+        "properties": {
+          "closes": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Closes",
+            "type": "array"
+          },
+          "windows": {
+            "default": 5,
+            "title": "Windows",
+            "type": "integer"
+          },
+          "train_ratio": {
+            "default": 0.7,
+            "title": "Train Ratio",
+            "type": "number"
+          },
+          "commission": {
+            "default": 0.0005,
+            "title": "Commission",
+            "type": "number"
+          }
+        },
+        "required": [
+          "closes"
+        ],
+        "title": "financial_walk_forwardArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "financial_market_history",
       "description": "Fetch unadjusted daily Yahoo history only when the host enabled networking. Reports source and dates; not a live quote.",
       "inputSchema": {
@@ -833,6 +916,37 @@
       "inputSchema": {
         "properties": {},
         "title": "financial_treasury_yieldsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_peer_comparison",
+      "description": "Trailing and forward PE, price to book, ROE, dividend yield and market cap of a company against 1..7 peers the caller names, with each metric's distance from the peer median, via yfinance, when the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "peers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Peers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "symbol",
+          "peers"
+        ],
+        "title": "financial_peer_comparisonArguments",
         "type": "object"
       },
       "annotations": {
