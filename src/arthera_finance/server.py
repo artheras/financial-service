@@ -155,6 +155,37 @@ def financial_funding_rates(symbols: list[str] | None = None, exchanges: list[st
     return invoke(api.funding_rates, symbols, exchanges)
 
 
+@mcp.tool(annotations=REMOTE_READ)
+def financial_sector_performance(market: str = "cn", top: StrictInt = 5) -> dict:
+    """Best and worst sectors on the latest trading day: China industry boards (akshare) or US SPDR sector ETFs (yfinance), when the host enabled networking."""
+    return invoke(api.sector_performance, market, top)
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_northbound_flow() -> dict:
+    """Stock Connect northbound net buying into Shanghai and Shenzhen (100 million CNY) for the latest published day, via akshare, when the host enabled networking."""
+    return invoke(api.northbound_flow)
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_limit_up_pool(day: str = "", limit: StrictInt = 50) -> dict:
+    """A-shares that closed at the daily limit-up on a date (default today), with consecutive limit count and first lock time, via akshare, when the host enabled networking."""
+    return invoke(api.limit_up_pool, day, limit)
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_screen_ashare(max_pe: StrictFloat = 50.0, min_market_cap_100m: StrictFloat = 0.0,
+                            sort_by: str = "change_pct", limit: StrictInt = 20) -> dict:
+    """Screen A-shares by dynamic PE and market cap (100 million CNY), excluding ST names, sorted by change, market cap, turnover or PE, via akshare, when the host enabled networking."""
+    return invoke(api.screen_ashare, max_pe, min_market_cap_100m, sort_by, limit)
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_market_indices() -> dict:
+    """Latest level and daily change for major US, China, Hong Kong, Japan, UK and German indices and the VIX, via yfinance, when the host enabled networking."""
+    return invoke(api.market_indices)
+
+
 @mcp.tool(annotations=READ)
 def financial_datasource_status() -> dict:
     """Which market-data sources this host has keys and packages for. Makes no network request."""
