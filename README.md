@@ -52,6 +52,11 @@ structured report and `--connection ID` to check one configured connection.
 | financial_options_chain | Host-enabled option expiries and chain for one expiry (strike, bid/ask, volume, OI, IV), nearest the money |
 | financial_crypto_fear_greed | Host-enabled crypto Fear & Greed index (alternative.me) for the last N days |
 | financial_funding_rates | Host-enabled perpetual funding rates from Binance, OKX, Bybit public endpoints (`[crypto]` extra) with cross-exchange spreads; no keys |
+| financial_sector_performance | Host-enabled best/worst China industry boards (akshare) or US sector ETFs (yfinance) |
+| financial_northbound_flow | Host-enabled Stock Connect northbound net buying; reports `not_disclosed` when the source shows zero |
+| financial_limit_up_pool | Host-enabled A-shares closing limit-up on a date, with consecutive limits |
+| financial_screen_ashare | Host-enabled A-share screen by PE and market cap, ST excluded, sorted by change, cap, turnover or PE |
+| financial_market_indices | Host-enabled major US, China, HK, Japan, UK, German indices and VIX with daily change |
 | financial_datasource_status | Which sources have keys and packages on this host; no network request |
 
 Missing metrics remain unknown. A successful calculation does not independently

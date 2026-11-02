@@ -330,3 +330,30 @@ def fear_greed(days=7):
 def funding_rates(symbols=None, exchanges=None):
     from . import derivatives
     return _network_gate() or derivatives.funding_rates(symbols, exchanges)
+
+
+# ── Market overviews ─────────────────────────────────────────────────────────
+
+def sector_performance(market="cn", top=5):
+    from . import markets
+    return _network_gate() or markets.sector_performance(market, top)
+
+
+def northbound_flow():
+    from . import markets
+    return _network_gate() or markets.northbound_flow()
+
+
+def limit_up_pool(day="", limit=50):
+    from . import markets
+    return _network_gate() or markets.limit_up_pool(day, limit)
+
+
+def screen_ashare(max_pe=50.0, min_market_cap_100m=0.0, sort_by="change_pct", limit=20):
+    from . import markets
+    return _network_gate() or markets.screen_ashare(max_pe, min_market_cap_100m, sort_by, limit)
+
+
+def market_indices():
+    from . import markets
+    return _network_gate() or markets.market_indices()
