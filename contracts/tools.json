@@ -477,6 +477,124 @@
       }
     },
     {
+      "name": "financial_sector_performance",
+      "description": "Best and worst sectors on the latest trading day: China industry boards (akshare) or US SPDR sector ETFs (yfinance), when the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "market": {
+            "default": "cn",
+            "title": "Market",
+            "type": "string"
+          },
+          "top": {
+            "default": 5,
+            "title": "Top",
+            "type": "integer"
+          }
+        },
+        "title": "financial_sector_performanceArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_northbound_flow",
+      "description": "Stock Connect northbound net buying into Shanghai and Shenzhen (100 million CNY) for the latest published day, via akshare, when the host enabled networking.",
+      "inputSchema": {
+        "properties": {},
+        "title": "financial_northbound_flowArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_limit_up_pool",
+      "description": "A-shares that closed at the daily limit-up on a date (default today), with consecutive limit count and first lock time, via akshare, when the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "day": {
+            "default": "",
+            "title": "Day",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "financial_limit_up_poolArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_screen_ashare",
+      "description": "Screen A-shares by dynamic PE and market cap (100 million CNY), excluding ST names, sorted by change, market cap, turnover or PE, via akshare, when the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "max_pe": {
+            "default": 50.0,
+            "title": "Max Pe",
+            "type": "number"
+          },
+          "min_market_cap_100m": {
+            "default": 0.0,
+            "title": "Min Market Cap 100M",
+            "type": "number"
+          },
+          "sort_by": {
+            "default": "change_pct",
+            "title": "Sort By",
+            "type": "string"
+          },
+          "limit": {
+            "default": 20,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "financial_screen_ashareArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_market_indices",
+      "description": "Latest level and daily change for major US, China, Hong Kong, Japan, UK and German indices and the VIX, via yfinance, when the host enabled networking.",
+      "inputSchema": {
+        "properties": {},
+        "title": "financial_market_indicesArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
       "name": "financial_datasource_status",
       "description": "Which market-data sources this host has keys and packages for. Makes no network request.",
       "inputSchema": {

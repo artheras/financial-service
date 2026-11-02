@@ -49,6 +49,11 @@ structured report and `--connection ID` to check one configured connection.
 | financial_technical_factors | Momentum, moving averages, volatility, RSI(14), MACD, Bollinger, volume ratio and beta for supplied closes; no network |
 | financial_optimize_weights | max_sharpe (long-only search), min_var (analytic) or equal weights for 2..20 date-aligned close series; no network |
 | financial_quality_scores | Piotroski F-score and Altman Z'' from supplied current and prior statement fields; missing inputs stay null; no network |
+| financial_sector_performance | Host-enabled best/worst China industry boards (akshare) or US sector ETFs (yfinance) |
+| financial_northbound_flow | Host-enabled Stock Connect northbound net buying; reports `not_disclosed` when the source shows zero |
+| financial_limit_up_pool | Host-enabled A-shares closing limit-up on a date, with consecutive limits |
+| financial_screen_ashare | Host-enabled A-share screen by PE and market cap, ST excluded, sorted by change, cap, turnover or PE |
+| financial_market_indices | Host-enabled major US, China, HK, Japan, UK, German indices and VIX with daily change |
 | financial_datasource_status | Which sources have keys and packages on this host; no network request |
 
 Missing metrics remain unknown. A successful calculation does not independently
