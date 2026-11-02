@@ -289,3 +289,27 @@ def macro_series(series, source="fred", country="US", years=10):
             "retrieved_at": datetime.now(timezone.utc).isoformat(),
             "limitations": ["Values as published by the source; recent observations may be revised.",
                             "At most the last 500 observations are returned."]}
+
+
+# ── Macro snapshots (US, China, policy rates) ────────────────────────────────
+
+def _network_gate():
+    if not network_enabled():
+        return {"success": False, "error_code": "network_disabled",
+                "error": "The host must explicitly enable FINANCIAL_SERVICE_NETWORK=1"}
+    return None
+
+
+def us_macro(indicator="all", periods=12):
+    from . import macro
+    return _network_gate() or macro.us_macro(indicator, periods)
+
+
+def cn_macro(indicator="all", periods=12):
+    from . import macro
+    return _network_gate() or macro.cn_macro(indicator, periods)
+
+
+def central_bank_rates():
+    from . import macro
+    return _network_gate() or macro.central_bank_rates()

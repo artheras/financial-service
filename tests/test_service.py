@@ -59,7 +59,8 @@ async def test_real_standard_mcp_stdio_session():
                              "financial_backtest", "financial_market_history", "financial_broker_connections",
                              "financial_broker_account", "financial_broker_positions", "financial_broker_orders",
                              "financial_quote", "financial_fundamentals", "financial_datasource_status",
-                             "financial_macro_series"}
+                             "financial_macro_series", "financial_us_macro", "financial_cn_macro",
+                             "financial_central_bank_rates"}
             assert all(tool.annotations.readOnlyHint for tool in tools)
             result = await session.call_tool("financial_analyze_statements", {
                 "financials": {"income_statement": {"revenue": 1000, "net_income": 100}}})
