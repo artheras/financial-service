@@ -1,0 +1,177 @@
+{
+  "server": "arthera-trading",
+  "tools": [
+    {
+      "name": "trading_accounts",
+      "description": "Whether trading is enabled on this host, whether it is halted, and the paper accounts the host configured.",
+      "inputSchema": {
+        "properties": {},
+        "title": "trading_accountsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "trading_account_state",
+      "description": "Cash, positions, today's order count and traded value, and the limits of one paper account.",
+      "inputSchema": {
+        "properties": {
+          "account_id": {
+            "title": "Account Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_id"
+        ],
+        "title": "trading_account_stateArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "trading_preview_order",
+      "description": "Plan a limit order (by quantity, or by target weight of the account) and check it against the account's limits. Records a preview that expires in 10 minutes; changes no account. Show it to the person before anything else.",
+      "inputSchema": {
+        "properties": {
+          "account_id": {
+            "title": "Account Id",
+            "type": "string"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "side": {
+            "title": "Side",
+            "type": "string"
+          },
+          "limit_price": {
+            "title": "Limit Price",
+            "type": "number"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quantity"
+          },
+          "target_weight": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target Weight"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_id",
+          "symbol",
+          "side",
+          "limit_price"
+        ],
+        "title": "trading_preview_orderArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "trading_execute_order",
+      "description": "Execute one pending, unexpired preview after re-checking it against the account as it is now. Only call this when the person has seen that preview and said to execute it.",
+      "inputSchema": {
+        "properties": {
+          "preview_id": {
+            "title": "Preview Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "preview_id"
+        ],
+        "title": "trading_execute_orderArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "trading_cancel_preview",
+      "description": "Cancel a pending preview so it can no longer be executed.",
+      "inputSchema": {
+        "properties": {
+          "preview_id": {
+            "title": "Preview Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "preview_id"
+        ],
+        "title": "trading_cancel_previewArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "trading_audit",
+      "description": "The most recent previews, executions, cancellations and refusals from the audit log.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "default": 20,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "trading_auditArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

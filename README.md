@@ -117,3 +117,34 @@ from the installed package directory so modules in the client's workspace are
 never imported next to broker credentials. Install the service into a venv, not
 with `pip install --user`, because isolated mode ignores user site-packages.
 
+
+## arthera-trading (paper orders)
+
+A second MCP server, `arthera-trading`, can place orders. It is separate so
+`arthera-financial-service` stays read-only by construction.
+
+| Tool | Changes an account? |
+|---|---|
+| trading_accounts, trading_account_state, trading_audit | No (read-only) |
+| trading_preview_order | No: records a preview that expires in 10 minutes |
+| trading_cancel_preview | No: retires a preview |
+| trading_execute_order | **Yes**; marked `destructiveHint`, takes only a preview id |
+
+Gates, all owned by the host and none writable through a tool:
+
+- Off unless `ARTHERA_TRADING_ENABLED=1`.
+- Accounts and limits come from `$FINANCIAL_SERVICE_HOME/trading.json`. Only `"type": "paper"` exists; fills are simulated at the limit price.
+- Limits block, never just warn: position share, single-order share, cash reserve, orders per day, traded value per day.
+- `ARTHERA_TRADING_HALT=1`, or a file named `HALT` in the service home, freezes previews and executions.
+- An execution re-checks the previewed order against the account as it is at that moment; a preview is single use.
+- Every preview, execution, cancellation and refusal is appended to `trading_audit.jsonl`.
+
+```json
+{"accounts": [{"id": "paper", "type": "paper", "starting_cash": 100000, "currency": "USD",
+  "limits": {"max_position_weight": 0.2, "max_order_weight": 0.1, "min_cash_reserve_weight": 0.02,
+             "max_orders_per_day": 20, "max_notional_per_day": 50000}}]}
+```
+
+Clients must ask a person before every `trading_execute_order` call; Aria
+Code does so for any tool marked `destructiveHint`. Do not add this tool to an
+auto-approve list.
