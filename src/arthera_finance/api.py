@@ -357,3 +357,15 @@ def screen_ashare(max_pe=50.0, min_market_cap_100m=0.0, sort_by="change_pct", li
 def market_indices():
     from . import markets
     return _network_gate() or markets.market_indices()
+
+
+# ── A-share and crypto history ───────────────────────────────────────────────
+
+def ashare_history(symbol, days=365, adjust="qfq"):
+    from . import history
+    return _network_gate() or history.ashare_history(symbol, days, adjust)
+
+
+def crypto_ohlcv(symbol="BTC/USDT", exchange="binance", timeframe="1d", limit=200):
+    from . import history
+    return _network_gate() or history.crypto_ohlcv(symbol, exchange, timeframe, limit)

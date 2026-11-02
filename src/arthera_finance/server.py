@@ -186,6 +186,19 @@ def financial_market_indices() -> dict:
     return invoke(api.market_indices)
 
 
+@mcp.tool(annotations=REMOTE_READ)
+def financial_ashare_history(symbol: str, days: StrictInt = 365, adjust: str = "qfq") -> dict:
+    """Daily A-share bars (date, open, high, low, close, volume) from akshare, forward-adjusted by default, in the same shape as financial_market_history, when the host enabled networking."""
+    return invoke(api.ashare_history, symbol, days, adjust)
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_crypto_ohlcv(symbol: str = "BTC/USDT", exchange: str = "binance", timeframe: str = "1d",
+                           limit: StrictInt = 200) -> dict:
+    """Spot crypto candles from Binance, OKX or Bybit public endpoints (ccxt, [crypto] extra) in the same shape as financial_market_history, when the host enabled networking."""
+    return invoke(api.crypto_ohlcv, symbol, exchange, timeframe, limit)
+
+
 @mcp.tool(annotations=READ)
 def financial_datasource_status() -> dict:
     """Which market-data sources this host has keys and packages for. Makes no network request."""

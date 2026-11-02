@@ -57,6 +57,8 @@ structured report and `--connection ID` to check one configured connection.
 | financial_limit_up_pool | Host-enabled A-shares closing limit-up on a date, with consecutive limits |
 | financial_screen_ashare | Host-enabled A-share screen by PE and market cap, ST excluded, sorted by change, cap, turnover or PE |
 | financial_market_indices | Host-enabled major US, China, HK, Japan, UK, German indices and VIX with daily change |
+| financial_ashare_history | Host-enabled daily A-share bars from akshare (forward-adjusted by default), same shape as financial_market_history |
+| financial_crypto_ohlcv | Host-enabled spot crypto candles from Binance, OKX or Bybit public endpoints (`[crypto]` extra), same shape |
 | financial_datasource_status | Which sources have keys and packages on this host; no network request |
 
 Missing metrics remain unknown. A successful calculation does not independently
