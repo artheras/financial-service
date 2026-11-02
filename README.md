@@ -46,6 +46,9 @@ structured report and `--connection ID` to check one configured connection.
 | financial_us_macro | Host-enabled US snapshot from FRED: GDP growth, CPI and core CPI YoY, fed funds, unemployment, 2y/10y yields and curve shape, M2, PPI |
 | financial_cn_macro | Host-enabled China snapshot via akshare (`[cn]` extra): CPI, PPI, PMI, GDP growth, LPR, money supply |
 | financial_central_bank_rates | Host-enabled Fed, ECB, UK SONIA, Japan call rate and PBOC LPR, each dated and flagged stale after 180 days |
+| financial_technical_factors | Momentum, moving averages, volatility, RSI(14), MACD, Bollinger, volume ratio and beta for supplied closes; no network |
+| financial_optimize_weights | max_sharpe (long-only search), min_var (analytic) or equal weights for 2..20 date-aligned close series; no network |
+| financial_quality_scores | Piotroski F-score and Altman Z'' from supplied current and prior statement fields; missing inputs stay null; no network |
 | financial_datasource_status | Which sources have keys and packages on this host; no network request |
 
 Missing metrics remain unknown. A successful calculation does not independently
