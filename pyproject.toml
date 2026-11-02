@@ -21,7 +21,7 @@ longbridge = ["longbridge>=1.0.22"]
 webull = ["webull>=0.3.14"]
 trading212 = ["requests>=2.32.0"]
 easytrader = ["easytrader>=0.23"]
-dev = ["pytest>=8", "pytest-asyncio>=0.24"]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "pandas>=2"]
 
 [project.scripts]
 arthera-financial-service = "arthera_finance.server:main"

@@ -239,3 +239,53 @@ def datasource_status():
             row["package_installed"] = importlib.util.find_spec(packages[name]) is not None
         rows.append(row)
     return {"success": True, "network_enabled": network_enabled(), "sources": rows}
+
+
+# ── Macro series (FRED, World Bank), from aria-code's macro tools ───────────
+
+_SERIES = re.compile(r"[A-Za-z0-9_.]{1,40}")
+_COUNTRY = re.compile(r"[A-Za-z]{2,3}")
+
+
+def _frame_rows(frame, limit=500):
+    rows = []
+    for idx, value in frame["close"].tail(limit).items():
+        number = float(value)
+        if math.isfinite(number):
+            rows.append({"date": str(getattr(idx, "date", lambda: idx)()), "value": number})
+    return rows
+
+
+def macro_series(series, source="fred", country="US", years=10):
+    if not network_enabled():
+        return {"success": False, "error_code": "network_disabled",
+                "error": "The host must explicitly enable FINANCIAL_SERVICE_NETWORK=1"}
+    if not isinstance(series, str) or not _SERIES.fullmatch(series):
+        raise ValueError("series must be a FRED series id, a World Bank indicator code or an alias such as CPI")
+    if source not in ("fred", "world_bank"):
+        raise ValueError("source must be fred or world_bank")
+    if not isinstance(country, str) or not _COUNTRY.fullmatch(country):
+        raise ValueError("country must be a 2 or 3 letter code")
+    if type(years) is not int or not 1 <= years <= 60:
+        raise ValueError("years must be an integer from 1 to 60")
+    import importlib.util
+    if importlib.util.find_spec("pandas") is None:
+        return {"success": False, "error_code": "dependency_missing",
+                "error": "Install arthera-financial-service[market]"}
+    if source == "fred":
+        from .datasources.sources.fred_source import FREDSource
+        result = FREDSource().history(series.upper(), days=365 * years)
+    else:
+        from .datasources.sources.world_bank_source import WorldBankSource
+        end = date.today().year
+        result = WorldBankSource().get_indicator(series.upper(), country.upper(), end - years, end)
+    if result is None or result.data is None or len(result.data) == 0:
+        return {"success": False, "error_code": "source_unavailable",
+                "error": "The source returned no observations for this series"}
+    rows = _frame_rows(result.data)
+    return {"success": True, "series": series.upper(), "source": source,
+            "country": country.upper() if source == "world_bank" else None,
+            "observations": rows, "as_of": rows[-1]["date"] if rows else None,
+            "retrieved_at": datetime.now(timezone.utc).isoformat(),
+            "limitations": ["Values as published by the source; recent observations may be revised.",
+                            "At most the last 500 observations are returned."]}

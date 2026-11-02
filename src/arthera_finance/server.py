@@ -93,6 +93,12 @@ def financial_fundamentals(symbol: str) -> dict:
     return invoke(api.market_fundamentals, symbol)
 
 
+@mcp.tool(annotations=REMOTE_READ)
+def financial_macro_series(series: str, source: str = "fred", country: str = "US", years: StrictInt = 10) -> dict:
+    """Macroeconomic time series from FRED (US10Y, CPI, UNRATE, FEDFUNDS, M2 or any series id) or the World Bank (GDP, CPI and indicator codes, by country), when the host enabled networking."""
+    return invoke(api.macro_series, series, source, country, years)
+
+
 @mcp.tool(annotations=READ)
 def financial_datasource_status() -> dict:
     """Which market-data sources this host has keys and packages for. Makes no network request."""

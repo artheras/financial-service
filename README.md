@@ -42,6 +42,7 @@ structured report and `--connection ID` to check one configured connection.
 | financial_broker_orders | Read existing orders; cannot place or cancel orders |
 | financial_quote | Host-enabled quote from the first configured source that answers (yfinance, Finnhub, Alpha Vantage, Tushare, AkShare); names its source, may be delayed |
 | financial_fundamentals | Host-enabled PE, PB, ROE, growth, dividend yield and market value; missing metrics are omitted |
+| financial_macro_series | Host-enabled FRED series (US10Y, CPI, UNRATE, FEDFUNDS, M2 or any id) or World Bank indicators by country; last 500 observations |
 | financial_datasource_status | Which sources have keys and packages on this host; no network request |
 
 Missing metrics remain unknown. A successful calculation does not independently
