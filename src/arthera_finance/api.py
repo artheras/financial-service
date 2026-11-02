@@ -313,3 +313,20 @@ def cn_macro(indicator="all", periods=12):
 def central_bank_rates():
     from . import macro
     return _network_gate() or macro.central_bank_rates()
+
+
+# ── Derivatives and crypto sentiment ─────────────────────────────────────────
+
+def options_chain(symbol, expiry="", side="both", limit=15):
+    from . import derivatives
+    return _network_gate() or derivatives.options_chain(symbol, expiry, side, limit)
+
+
+def fear_greed(days=7):
+    from . import derivatives
+    return _network_gate() or derivatives.fear_greed(days)
+
+
+def funding_rates(symbols=None, exchanges=None):
+    from . import derivatives
+    return _network_gate() or derivatives.funding_rates(symbols, exchanges)

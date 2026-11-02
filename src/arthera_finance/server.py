@@ -137,6 +137,24 @@ def financial_central_bank_rates() -> dict:
     return invoke(api.central_bank_rates)
 
 
+@mcp.tool(annotations=REMOTE_READ)
+def financial_options_chain(symbol: str, expiry: str = "", side: str = "both", limit: StrictInt = 15) -> dict:
+    """Listed option expiries and the chain (strike, last, bid, ask, volume, open interest, implied volatility) for one expiry, nearest the money, from yfinance, when the host enabled networking."""
+    return invoke(api.options_chain, symbol, expiry, side, limit)
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_crypto_fear_greed(days: StrictInt = 7) -> dict:
+    """The crypto Fear & Greed index (alternative.me) for the last N days, when the host enabled networking."""
+    return invoke(api.fear_greed, days)
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_funding_rates(symbols: list[str] | None = None, exchanges: list[str] | None = None) -> dict:
+    """Current perpetual funding rates from Binance, OKX and Bybit public endpoints (ccxt, [crypto] extra) with cross-exchange spreads, when the host enabled networking. Read-only; no keys."""
+    return invoke(api.funding_rates, symbols, exchanges)
+
+
 @mcp.tool(annotations=READ)
 def financial_datasource_status() -> dict:
     """Which market-data sources this host has keys and packages for. Makes no network request."""

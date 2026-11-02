@@ -49,6 +49,9 @@ structured report and `--connection ID` to check one configured connection.
 | financial_technical_factors | Momentum, moving averages, volatility, RSI(14), MACD, Bollinger, volume ratio and beta for supplied closes; no network |
 | financial_optimize_weights | max_sharpe (long-only search), min_var (analytic) or equal weights for 2..20 date-aligned close series; no network |
 | financial_quality_scores | Piotroski F-score and Altman Z'' from supplied current and prior statement fields; missing inputs stay null; no network |
+| financial_options_chain | Host-enabled option expiries and chain for one expiry (strike, bid/ask, volume, OI, IV), nearest the money |
+| financial_crypto_fear_greed | Host-enabled crypto Fear & Greed index (alternative.me) for the last N days |
+| financial_funding_rates | Host-enabled perpetual funding rates from Binance, OKX, Bybit public endpoints (`[crypto]` extra) with cross-exchange spreads; no keys |
 | financial_datasource_status | Which sources have keys and packages on this host; no network request |
 
 Missing metrics remain unknown. A successful calculation does not independently

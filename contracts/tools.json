@@ -477,6 +477,111 @@
       }
     },
     {
+      "name": "financial_options_chain",
+      "description": "Listed option expiries and the chain (strike, last, bid, ask, volume, open interest, implied volatility) for one expiry, nearest the money, from yfinance, when the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "expiry": {
+            "default": "",
+            "title": "Expiry",
+            "type": "string"
+          },
+          "side": {
+            "default": "both",
+            "title": "Side",
+            "type": "string"
+          },
+          "limit": {
+            "default": 15,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "title": "financial_options_chainArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_crypto_fear_greed",
+      "description": "The crypto Fear & Greed index (alternative.me) for the last N days, when the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "days": {
+            "default": 7,
+            "title": "Days",
+            "type": "integer"
+          }
+        },
+        "title": "financial_crypto_fear_greedArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_funding_rates",
+      "description": "Current perpetual funding rates from Binance, OKX and Bybit public endpoints (ccxt, [crypto] extra) with cross-exchange spreads, when the host enabled networking. Read-only; no keys.",
+      "inputSchema": {
+        "properties": {
+          "symbols": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Symbols"
+          },
+          "exchanges": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Exchanges"
+          }
+        },
+        "title": "financial_funding_ratesArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
       "name": "financial_datasource_status",
       "description": "Which market-data sources this host has keys and packages for. Makes no network request.",
       "inputSchema": {
