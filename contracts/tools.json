@@ -161,6 +161,143 @@
       }
     },
     {
+      "name": "financial_technical_factors",
+      "description": "Momentum, moving averages and gaps, volatility, RSI(14), MACD, Bollinger position, volume ratio and beta for caller-supplied daily closes (oldest first; e.g. from financial_market_history). No network.",
+      "inputSchema": {
+        "properties": {
+          "closes": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Closes",
+            "type": "array"
+          },
+          "volumes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Volumes"
+          },
+          "benchmark_closes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Benchmark Closes"
+          }
+        },
+        "required": [
+          "closes"
+        ],
+        "title": "financial_technical_factorsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "financial_optimize_weights",
+      "description": "Portfolio weights (max_sharpe, min_var or equal_weight) from caller-supplied, date-aligned closes for 2..20 symbols, with expected return, volatility and Sharpe. A historical estimate, not advice. No network.",
+      "inputSchema": {
+        "properties": {
+          "prices": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "Prices",
+            "type": "object"
+          },
+          "method": {
+            "default": "max_sharpe",
+            "title": "Method",
+            "type": "string"
+          },
+          "risk_free_rate": {
+            "default": 0.04,
+            "title": "Risk Free Rate",
+            "type": "number"
+          },
+          "periods_per_year": {
+            "default": 252,
+            "title": "Periods Per Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "prices"
+        ],
+        "title": "financial_optimize_weightsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "financial_quality_scores",
+      "description": "Piotroski F-score and Altman Z''-score from caller-supplied statement fields for the current and prior fiscal year. Missing inputs leave signals null; no verdict is given unless all are evaluated. No network.",
+      "inputSchema": {
+        "properties": {
+          "current": {
+            "additionalProperties": true,
+            "title": "Current",
+            "type": "object"
+          },
+          "prior": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prior"
+          }
+        },
+        "required": [
+          "current"
+        ],
+        "title": "financial_quality_scoresArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "financial_market_history",
       "description": "Fetch unadjusted daily Yahoo history only when the host enabled networking. Reports source and dates; not a live quote.",
       "inputSchema": {

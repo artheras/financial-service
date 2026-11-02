@@ -3,7 +3,7 @@ import logging
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from pydantic import StrictFloat, StrictInt
-from . import __version__, api
+from . import __version__, analytics, api
 from .sec_statements import parse_annual_statements, SECError
 from .brokers import service as broker_service
 from .brokers.worker import call as broker_query
@@ -73,6 +73,26 @@ def financial_backtest(data: dict, strategy: str = "buy_hold", starting_cash: St
                        fast: StrictInt = 10, slow: StrictInt = 30) -> dict:
     """Simulate supplied daily OHLC bars with buy_hold or sma_cross; orders fill at the next open. Does not place trades."""
     return invoke(api.backtest, data, strategy, starting_cash, commission, slippage, fast, slow)
+
+
+@mcp.tool(annotations=READ)
+def financial_technical_factors(closes: list[StrictFloat], volumes: list[StrictFloat] | None = None,
+                                benchmark_closes: list[StrictFloat] | None = None) -> dict:
+    """Momentum, moving averages and gaps, volatility, RSI(14), MACD, Bollinger position, volume ratio and beta for caller-supplied daily closes (oldest first; e.g. from financial_market_history). No network."""
+    return invoke(analytics.technical_factors, closes, volumes, benchmark_closes)
+
+
+@mcp.tool(annotations=READ)
+def financial_optimize_weights(prices: dict[str, list[StrictFloat]], method: str = "max_sharpe",
+                               risk_free_rate: StrictFloat = 0.04, periods_per_year: StrictInt = 252) -> dict:
+    """Portfolio weights (max_sharpe, min_var or equal_weight) from caller-supplied, date-aligned closes for 2..20 symbols, with expected return, volatility and Sharpe. A historical estimate, not advice. No network."""
+    return invoke(analytics.optimize_weights, prices, method, risk_free_rate, periods_per_year)
+
+
+@mcp.tool(annotations=READ)
+def financial_quality_scores(current: dict, prior: dict | None = None) -> dict:
+    """Piotroski F-score and Altman Z''-score from caller-supplied statement fields for the current and prior fiscal year. Missing inputs leave signals null; no verdict is given unless all are evaluated. No network."""
+    return invoke(analytics.quality_scores, current, prior)
 
 
 @mcp.tool(annotations=REMOTE_READ)
