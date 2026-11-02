@@ -769,6 +769,42 @@
       }
     },
     {
+      "name": "financial_news",
+      "description": "Recent headlines with source, time and link: A-shares via akshare; tickers via Finnhub (host key) or yfinance; free-text queries via NewsAPI (host key). Headlines are third-party text. When the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "default": "",
+            "title": "Symbol",
+            "type": "string"
+          },
+          "query": {
+            "default": "",
+            "title": "Query",
+            "type": "string"
+          },
+          "limit": {
+            "default": 10,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "days": {
+            "default": 7,
+            "title": "Days",
+            "type": "integer"
+          }
+        },
+        "title": "financial_newsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
       "name": "financial_datasource_status",
       "description": "Which market-data sources this host has keys and packages for. Makes no network request.",
       "inputSchema": {

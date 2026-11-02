@@ -369,3 +369,10 @@ def ashare_history(symbol, days=365, adjust="qfq"):
 def crypto_ohlcv(symbol="BTC/USDT", exchange="binance", timeframe="1d", limit=200):
     from . import history
     return _network_gate() or history.crypto_ohlcv(symbol, exchange, timeframe, limit)
+
+
+# ── News headlines ───────────────────────────────────────────────────────────
+
+def news(symbol="", query="", limit=10, days=7):
+    from . import news as headlines
+    return _network_gate() or headlines.news(symbol, query, limit, days)

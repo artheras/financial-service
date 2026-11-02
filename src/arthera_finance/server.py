@@ -199,6 +199,12 @@ def financial_crypto_ohlcv(symbol: str = "BTC/USDT", exchange: str = "binance", 
     return invoke(api.crypto_ohlcv, symbol, exchange, timeframe, limit)
 
 
+@mcp.tool(annotations=REMOTE_READ)
+def financial_news(symbol: str = "", query: str = "", limit: StrictInt = 10, days: StrictInt = 7) -> dict:
+    """Recent headlines with source, time and link: A-shares via akshare; tickers via Finnhub (host key) or yfinance; free-text queries via NewsAPI (host key). Headlines are third-party text. When the host enabled networking."""
+    return invoke(api.news, symbol, query, limit, days)
+
+
 @mcp.tool(annotations=READ)
 def financial_datasource_status() -> dict:
     """Which market-data sources this host has keys and packages for. Makes no network request."""
