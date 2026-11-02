@@ -700,6 +700,75 @@
       }
     },
     {
+      "name": "financial_ashare_history",
+      "description": "Daily A-share bars (date, open, high, low, close, volume) from akshare, forward-adjusted by default, in the same shape as financial_market_history, when the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "days": {
+            "default": 365,
+            "title": "Days",
+            "type": "integer"
+          },
+          "adjust": {
+            "default": "qfq",
+            "title": "Adjust",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "title": "financial_ashare_historyArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_crypto_ohlcv",
+      "description": "Spot crypto candles from Binance, OKX or Bybit public endpoints (ccxt, [crypto] extra) in the same shape as financial_market_history, when the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "default": "BTC/USDT",
+            "title": "Symbol",
+            "type": "string"
+          },
+          "exchange": {
+            "default": "binance",
+            "title": "Exchange",
+            "type": "string"
+          },
+          "timeframe": {
+            "default": "1d",
+            "title": "Timeframe",
+            "type": "string"
+          },
+          "limit": {
+            "default": 200,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "financial_crypto_ohlcvArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
       "name": "financial_datasource_status",
       "description": "Which market-data sources this host has keys and packages for. Makes no network request.",
       "inputSchema": {
