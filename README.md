@@ -148,3 +148,18 @@ Gates, all owned by the host and none writable through a tool:
 Clients must ask a person before every `trading_execute_order` call; Aria
 Code does so for any tool marked `destructiveHint`. Do not add this tool to an
 auto-approve list.
+
+## Arthera Web, desktop and iOS
+
+These clients consume this service through the authenticated private Arthera
+backend, using the official plugin catalogue. Operators install a pinned service
+commit in a separate Python 3.11+ environment; clients opt in per account after
+a successful MCP probe. Local stdio configuration does not itself expose an HTTP
+endpoint. The backend isolates service workspaces per authenticated owner and
+does not accept executable paths from clients.
+
+The hosted finance bridge disables broker access and trading. Healthcare remains
+public-literature research only and cannot receive patient records or approve
+clinical use. Production storage and networking require explicit operator setup.
+Plugin workflows and host templates are maintained in
+[aria-plugins](https://github.com/artheras/aria-plugins).
