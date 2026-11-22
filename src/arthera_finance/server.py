@@ -108,6 +108,25 @@ def financial_walk_forward(closes: list[StrictFloat], windows: StrictInt = 5, tr
     return invoke(strategies.walk_forward, closes, windows, train_ratio, commission)
 
 
+@mcp.tool(annotations=READ)
+def financial_resolve_symbol(query: str) -> dict:
+    """Resolve a Chinese or English company name, brand alias, bare 6-digit A-share code, or HK numeric code into a canonical ticker and market classification. No network."""
+    return invoke(api.resolve_symbol, query)
+
+
+@mcp.tool(annotations=READ)
+def financial_correlation_matrix(prices: dict[str, list[StrictFloat]]) -> dict:
+    """Pairwise log-return Pearson correlation matrix, highest/lowest correlated pairs, and diversification score from date-aligned closes for 2..20 symbols. No network."""
+    return invoke(analytics.correlation_matrix, prices)
+
+
+@mcp.tool(annotations=READ)
+def financial_stat_arb(closes_a: list[StrictFloat], closes_b: list[StrictFloat], window: StrictInt = 20,
+                       entry_z: StrictFloat = 2.0, stop_z: StrictFloat = 3.5) -> dict:
+    """Pairs-trading statistical arbitrage spread analysis over two aligned close series: OLS log-price hedge ratio, rolling Z-score, Ornstein-Uhlenbeck AR(1) mean-reversion half-life, return correlation, and threshold signal. No network."""
+    return invoke(analytics.stat_arb, closes_a, closes_b, window, entry_z, stop_z)
+
+
 @mcp.tool(annotations=REMOTE_READ)
 def financial_market_history(symbol: str, days: StrictInt = 90) -> dict:
     """Fetch unadjusted daily Yahoo history only when the host enabled networking. Reports source and dates; not a live quote."""

@@ -88,3 +88,27 @@ def test_missing_inputs_are_unknown_not_zero():
 def test_quality_inputs_are_checked():
     for args in [({},), ({"net_income": "1"},), ({"net_income": True},), ({"mystery": 1},), (CURRENT, [1])]:
         assert server.invoke(analytics.quality_scores, *args)["error_code"] == "invalid_input", args
+
+
+def test_correlation_matrix_and_stat_arb_and_symbol_resolution():
+    a = closes(60, 100.0, 0.4)
+    b = [v * 1.5 + (0.8 if i % 2 == 0 else -0.8) for i, v in enumerate(a)]
+    c = [200.0 - 0.3 * i + (0.5 if i % 4 == 0 else -0.4) for i in range(60)]
+    corr = server.invoke(analytics.correlation_matrix, {"A": a, "B": b, "C": c})
+    assert corr["success"] is True
+    assert corr["matrix"]["A"]["A"] == 1.0
+    assert corr["matrix"]["A"]["B"] == corr["matrix"]["B"]["A"]
+    assert 0.0 <= corr["diversification_score"] <= 1.0
+
+    sa = server.invoke(analytics.stat_arb, a, b, 20, 2.0, 3.5)
+    assert sa["success"] is True
+    assert sa["hedge_ratio_beta"] > 0
+    assert sa["signal"] in ("neutral", "short_spread", "long_spread", "stop_loss")
+
+    from arthera_finance import api
+    assert api.resolve_symbol("贵州茅台")["symbol"] == "600519.SS"
+    assert api.resolve_symbol("宁德时代")["symbol"] == "300750.SZ"
+    assert api.resolve_symbol("腾讯")["symbol"] == "0700.HK"
+    assert api.resolve_symbol("路易威登")["symbol"] == "MC.PA"
+    assert api.resolve_symbol("600036")["symbol"] == "600036.SS"
+    assert api.resolve_symbol("700.HK")["symbol"] == "0700.HK"

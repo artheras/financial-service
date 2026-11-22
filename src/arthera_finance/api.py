@@ -10,6 +10,7 @@ import os
 import re
 
 from . import performance_stats as stats
+from . import symbols as symbol_resolver
 from .backtest_engine import Bar, BacktestEngine, get_strategy
 from .statements import tool_analyze_financial_statements
 
@@ -113,10 +114,15 @@ def backtest(data, strategy="buy_hold", starting_cash=100000, commission=0.0005,
             "output_tail_limit": 100}
 
 
+def resolve_symbol(query: str) -> dict:
+    return symbol_resolver.resolve_symbol(query)
+
+
 def market_history(symbol, days=90):
     if not network_enabled():
         return {"success": False, "error_code": "network_disabled",
                 "error": "The host must explicitly enable FINANCIAL_SERVICE_NETWORK=1"}
+    symbol = symbol_resolver.normalize_symbol(symbol)
     if not isinstance(symbol, str) or not re.fullmatch(r"[A-Za-z0-9.^=/-]{1,20}", symbol):
         raise ValueError("Invalid market symbol")
     if type(days) is not int or not 1 <= days <= 2000:
@@ -186,6 +192,7 @@ def _source_call(symbol: str, method: str):
     if not network_enabled():
         return None, {"success": False, "error_code": "network_disabled",
                       "error": "The host must explicitly enable FINANCIAL_SERVICE_NETWORK=1"}
+    symbol = symbol_resolver.normalize_symbol(symbol)
     # Symbols reach source URLs: no path segments such as "..".
     if not isinstance(symbol, str) or not _QUOTE_SYMBOL.fullmatch(symbol) or ".." in symbol or symbol[0] in "./":
         raise ValueError("Invalid market symbol")

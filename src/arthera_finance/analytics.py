@@ -259,3 +259,106 @@ def quality_scores(current, prior=None):
             "limitations": ["Signals with missing inputs are null and not counted; a verdict needs all nine.",
                             "F1 and F3 use period-end total assets, not the average or opening balance.",
                             "Z'' zones (2.6 / 1.1) are the published non-manufacturer cut-offs; they are not a default probability."]}
+
+
+def correlation_matrix(prices):
+    if not isinstance(prices, dict) or not 2 <= len(prices) <= 20:
+        raise ValueError("prices requires 2..20 symbols")
+    symbols, series = list(prices), []
+    for symbol in symbols:
+        if not isinstance(symbol, str) or not _SYMBOL.fullmatch(symbol) or ".." in symbol or symbol[0] in "./":
+            raise ValueError("Invalid symbol")
+        closes = _series(prices[symbol], f"prices[{symbol}]", 20)
+        if max(closes) == min(closes):
+            raise ValueError(f"prices[{symbol}] has no price variation")
+        series.append(closes)
+    if len({len(s) for s in series}) != 1:
+        raise ValueError("Every symbol needs the same number of closes, aligned on the same dates")
+    returns = [[math.log(b / a) for a, b in zip(s, s[1:])] for s in series]
+    means = [_mean(r) for r in returns]
+    stdevs = [_stdev(r) for r in returns]
+    n, m = len(symbols), len(returns[0])
+    matrix = {s: {} for s in symbols}
+    pairs = []
+    for i in range(n):
+        matrix[symbols[i]][symbols[i]] = 1.0
+        for j in range(i + 1, n):
+            denom = stdevs[i] * stdevs[j] * (m - 1)
+            corr = sum((x - means[i]) * (y - means[j]) for x, y in zip(returns[i], returns[j])) / denom if denom > 0 else 0.0
+            corr = max(-1.0, min(1.0, round(corr, 4)))
+            matrix[symbols[i]][symbols[j]] = corr
+            matrix[symbols[j]][symbols[i]] = corr
+            pairs.append({"pair": [symbols[i], symbols[j]], "correlation": corr})
+    pairs.sort(key=lambda item: item["correlation"], reverse=True)
+    avg_corr = round(sum(p["correlation"] for p in pairs) / len(pairs), 4) if pairs else 0.0
+    return {
+        "success": True,
+        "matrix": matrix,
+        "highest_pair": pairs[0] if pairs else None,
+        "lowest_pair": pairs[-1] if pairs else None,
+        "average_correlation": avg_corr,
+        "diversification_score": round(max(0.0, min(1.0, (1.0 - avg_corr) / 2.0)), 4),
+        "observations": len(series[0]),
+        "source": "caller-supplied closes",
+        "limitations": ["Computed from aligned historical log returns; correlation shifts across market regimes."],
+    }
+
+
+def stat_arb(closes_a, closes_b, window=20, entry_z=2.0, stop_z=3.5):
+    if type(window) is not int or not 10 <= window <= 252:
+        raise ValueError("window must be an integer from 10 to 252")
+    a = _series(closes_a, "closes_a", max(30, window + 5))
+    b = _series(closes_b, "closes_b", len(a))
+    if len(a) != len(b):
+        raise ValueError("closes_a and closes_b must have the same length")
+    if isinstance(entry_z, bool) or not isinstance(entry_z, (int, float)) or not 0.5 <= entry_z <= 5.0:
+        raise ValueError("entry_z must be between 0.5 and 5.0")
+    if isinstance(stop_z, bool) or not isinstance(stop_z, (int, float)) or not entry_z < stop_z <= 10.0:
+        raise ValueError("stop_z must exceed entry_z and be at most 10.0")
+    log_a = [math.log(v) for v in a]
+    log_b = [math.log(v) for v in b]
+    ma, mb = _mean(log_a), _mean(log_b)
+    var_b = sum((y - mb) ** 2 for y in log_b)
+    if var_b <= 1e-15:
+        raise ValueError("closes_b has no price variation")
+    beta = sum((x - ma) * (y - mb) for x, y in zip(log_a, log_b)) / var_b
+    alpha = ma - beta * mb
+    spread = [x - (alpha + beta * y) for x, y in zip(log_a, log_b)]
+    tail = spread[-window:]
+    roll_mean = _mean(tail)
+    roll_sd = _stdev(tail)
+    z = (spread[-1] - roll_mean) / roll_sd if roll_sd > 1e-12 else 0.0
+    # Ornstein-Uhlenbeck AR(1) mean-reversion half-life: dS_t = lambda * (S_{t-1} - mu) + eps
+    lag = spread[:-1]
+    diff = [cur - prev for prev, cur in zip(spread, spread[1:])]
+    m_lag, m_diff = _mean(lag), _mean(diff)
+    var_lag = sum((v - m_lag) ** 2 for v in lag)
+    lam = sum((v - m_lag) * (d - m_diff) for v, d in zip(lag, diff)) / var_lag if var_lag > 1e-15 else 0.0
+    half_life = _r(-math.log(2) / lam, 2) if -1.0 < lam < -1e-6 else None
+    ret_a = [y - x for x, y in zip(log_a, log_a[1:])]
+    ret_b = [y - x for x, y in zip(log_b, log_b[1:])]
+    sd_a, sd_b = _stdev(ret_a), _stdev(ret_b)
+    corr = (sum((x - _mean(ret_a)) * (y - _mean(ret_b)) for x, y in zip(ret_a, ret_b))
+            / (sd_a * sd_b * (len(ret_a) - 1))) if sd_a > 0 and sd_b > 0 else 0.0
+    signal = ("stop_loss" if abs(z) >= stop_z else
+              "short_spread" if z >= entry_z else
+              "long_spread" if z <= -entry_z else "neutral")
+    return {
+        "success": True,
+        "hedge_ratio_beta": _r(beta, 4),
+        "intercept_alpha": _r(alpha, 4),
+        "current_spread": _r(spread[-1], 5),
+        "rolling_mean": _r(roll_mean, 5),
+        "rolling_std": _r(roll_sd, 5),
+        "current_z_score": _r(z, 3),
+        "half_life_periods": half_life,
+        "return_correlation": _r(corr, 4),
+        "signal": signal,
+        "thresholds": {"entry_z": float(entry_z), "stop_z": float(stop_z), "window": window},
+        "observations": len(a),
+        "source": "caller-supplied closes",
+        "limitations": [
+            "Log-price OLS hedge ratio estimated in-sample over the full series.",
+            "half_life_periods is null when the AR(1) slope is not mean-reverting.",
+        ],
+    }
