@@ -135,6 +135,13 @@ def financial_portfolio_backtest(prices: dict[str, list[StrictFloat]], weights: 
     return invoke(analytics.portfolio_backtest, prices, weights, benchmark_closes, rebalance, risk_free_rate, periods_per_year)
 
 
+@mcp.tool(annotations=READ)
+def financial_ohlcv_quality_audit(bars: list[dict], outlier_threshold: StrictFloat = 4.0,
+                                  window: StrictInt = 20) -> dict:
+    """Audit OHLCV bars (each with close and optional date, open, high, low, volume) for price/volume integrity violations, rolling return Z-score outliers, calendar gaps, and a 0..100 quality score. No network."""
+    return invoke(analytics.ohlcv_quality_audit, bars, outlier_threshold, window)
+
+
 
 @mcp.tool(annotations=REMOTE_READ)
 def financial_market_history(symbol: str, days: StrictInt = 90) -> dict:

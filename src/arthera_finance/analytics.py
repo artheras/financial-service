@@ -456,3 +456,116 @@ def portfolio_backtest(prices, weights=None, benchmark_closes=None, rebalance="m
         ],
     }
 
+
+def ohlcv_quality_audit(bars, outlier_threshold=4.0, window=20):
+    """Audit OHLCV bar integrity (H>=L, H>=O/C, L<=O/C, V>=0), rolling return Z-score outliers, and calendar gaps."""
+    from datetime import date as _date
+
+    def _num(val, name):
+        if isinstance(val, bool) or not isinstance(val, (int, float)) or not math.isfinite(val):
+            raise ValueError(f"{name} must be a finite number")
+        return float(val)
+
+    if not isinstance(bars, list) or not (1 <= len(bars) <= 2000):
+        raise ValueError("bars must be a list of 1..2000 OHLCV bar objects")
+    if isinstance(window, bool) or not isinstance(window, int) or not (5 <= window <= 252):
+        raise ValueError("window must be an integer between 5 and 252")
+    outlier_threshold = _num(outlier_threshold, "outlier_threshold")
+    if not (1.5 <= outlier_threshold <= 10.0):
+        raise ValueError("outlier_threshold must be between 1.5 and 10.0")
+
+    issues = []
+    closes = []
+    dates = []
+    eps = 1e-6
+
+    for idx, raw in enumerate(bars):
+        if not isinstance(raw, dict):
+            raise ValueError(f"bars[{idx}] must be an object")
+        label = str(raw.get("date") or idx)
+        dates.append(raw.get("date"))
+        o = _num(raw.get("open"), f"bars[{idx}].open") if raw.get("open") is not None else None
+        h = _num(raw.get("high"), f"bars[{idx}].high") if raw.get("high") is not None else None
+        l = _num(raw.get("low"), f"bars[{idx}].low") if raw.get("low") is not None else None
+        c = _num(raw.get("close"), f"bars[{idx}].close")
+        v = _num(raw.get("volume"), f"bars[{idx}].volume") if raw.get("volume") is not None else None
+        closes.append(c)
+
+        if h is not None and l is not None and h > 0 and l > 0:
+            if h < l - eps:
+                issues.append({"index": label, "column": "high/low", "type": "invalid_ohlcv", "detail": f"high({h}) < low({l})"})
+            if o is not None and o > 0 and h < o - eps:
+                issues.append({"index": label, "column": "high", "type": "invalid_ohlcv", "detail": f"high({h}) < open({o})"})
+            if c > 0 and h < c - eps:
+                issues.append({"index": label, "column": "high", "type": "invalid_ohlcv", "detail": f"high({h}) < close({c})"})
+            if o is not None and o > 0 and l > o + eps:
+                issues.append({"index": label, "column": "low", "type": "invalid_ohlcv", "detail": f"low({l}) > open({o})"})
+            if c > 0 and l > c + eps:
+                issues.append({"index": label, "column": "low", "type": "invalid_ohlcv", "detail": f"low({l}) > close({c})"})
+        if v is not None and v < 0:
+            issues.append({"index": label, "column": "volume", "type": "negative_volume", "detail": f"volume({v}) < 0"})
+
+    outliers = []
+    rets = [b / a - 1.0 if a > 0 else 0.0 for a, b in zip(closes, closes[1:])]
+    for i in range(len(rets)):
+        start = max(0, i + 1 - window)
+        win = rets[start : i + 1]
+        if len(win) >= 5:
+            mu = _mean(win)
+            sd = _stdev(win)
+            if sd > 1e-10:
+                z = (rets[i] - mu) / sd
+                if abs(z) > outlier_threshold:
+                    outliers.append({
+                        "index": str(dates[i + 1] or (i + 1)),
+                        "return": _r(rets[i], 4),
+                        "z_score": _r(z, 2),
+                    })
+
+    gaps = []
+    parsed_dates = []
+    for d in dates:
+        if isinstance(d, str) and len(d) >= 10:
+            try:
+                parsed_dates.append(_date.fromisoformat(d[:10]))
+            except ValueError:
+                parsed_dates.append(None)
+        else:
+            parsed_dates.append(None)
+
+    for i in range(1, len(parsed_dates)):
+        prev_d, curr_d = parsed_dates[i - 1], parsed_dates[i]
+        if prev_d and curr_d:
+            delta = (curr_d - prev_d).days
+            if delta <= 1 or (prev_d.weekday() == 4 and delta == 3):
+                continue
+            kind = "holiday" if delta <= 5 else ("suspension" if delta <= 10 else "data_gap")
+            gaps.append({
+                "start": prev_d.isoformat(),
+                "end": curr_d.isoformat(),
+                "days": delta - 1,
+                "kind": kind,
+            })
+
+    real_gap_days = sum(g["days"] for g in gaps if g["kind"] == "data_gap")
+    n = max(len(bars), 1)
+    penalty = (len(issues) * 2.0 + len(outliers) * 0.5 + real_gap_days * 5.0) / n * 10.0
+    quality_score = round(max(0.0, min(100.0, 100.0 - penalty)), 1)
+
+    return {
+        "success": True,
+        "quality_score": quality_score,
+        "observations": len(bars),
+        "issue_count": len(issues),
+        "issues": issues[:50],
+        "outlier_count": len(outliers),
+        "outliers": outliers[:50],
+        "gaps": gaps[:50],
+        "real_gap_days": real_gap_days,
+        "source": "caller-supplied bars",
+        "limitations": [
+            "Calendar gap heuristic treats 2..4 missing days as holiday clusters and >10 calendar days as data gaps.",
+        ],
+    }
+
+

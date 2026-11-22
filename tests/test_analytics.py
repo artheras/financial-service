@@ -126,3 +126,16 @@ def test_correlation_matrix_and_stat_arb_and_symbol_resolution():
     assert pb["portfolio"]["ending_equity"] > 0
     assert pb["benchmark"]["ending_equity"] > 0
 
+    bars = [
+        {"date": f"2026-01-{i+1:02d}", "open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0 + i * 0.2, "volume": 1000}
+        for i in range(10)
+    ]
+    bars.append({"date": "2026-01-28", "open": 102.0, "high": 98.0, "low": 101.0, "close": 160.0, "volume": -5})
+    audit = server.invoke(analytics.ohlcv_quality_audit, bars, 2.0, 8)
+    assert audit["success"] is True
+    assert audit["issue_count"] >= 2
+    assert audit["outlier_count"] >= 1
+    assert audit["real_gap_days"] >= 10
+    assert audit["quality_score"] < 100.0
+
+

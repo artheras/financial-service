@@ -555,6 +555,43 @@
       }
     },
     {
+      "name": "financial_ohlcv_quality_audit",
+      "description": "Audit OHLCV bars (each with close and optional date, open, high, low, volume) for price/volume integrity violations, rolling return Z-score outliers, calendar gaps, and a 0..100 quality score. No network.",
+      "inputSchema": {
+        "properties": {
+          "bars": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Bars",
+            "type": "array"
+          },
+          "outlier_threshold": {
+            "default": 4.0,
+            "title": "Outlier Threshold",
+            "type": "number"
+          },
+          "window": {
+            "default": 20,
+            "title": "Window",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bars"
+        ],
+        "title": "financial_ohlcv_quality_auditArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "financial_market_history",
       "description": "Fetch unadjusted daily Yahoo history only when the host enabled networking. Reports source and dates; not a live quote.",
       "inputSchema": {
