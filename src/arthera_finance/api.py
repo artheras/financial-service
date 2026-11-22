@@ -115,7 +115,7 @@ def backtest(data, strategy="buy_hold", starting_cash=100000, commission=0.0005,
 
 
 def resolve_symbol(query: str) -> dict:
-    return symbol_resolver.resolve_symbol(query)
+    return symbol_resolver.resolve_symbol(query, allow_network=network_enabled())
 
 
 def market_history(symbol, days=90):

@@ -200,7 +200,34 @@ def _ashare_suffix(code: str) -> str:
     return f"{code}.SZ"
 
 
-def resolve_symbol(query: str) -> dict:
+_DYNAMIC_UNIVERSE_CACHE: list[tuple[str, str, str]] | None = None
+
+
+def _load_dynamic_akshare_universe() -> list[tuple[str, str, str]]:
+    """Fetch A-share and HK name-to-code rows via akshare when installed and networking is enabled."""
+    global _DYNAMIC_UNIVERSE_CACHE
+    if _DYNAMIC_UNIVERSE_CACHE is not None:
+        return _DYNAMIC_UNIVERSE_CACHE
+    rows: list[tuple[str, str, str]] = []
+    try:
+        import akshare as ak
+        frame = ak.stock_info_a_code_name()
+        cols = {str(c).lower(): c for c in frame.columns}
+        name_col = next((cols[c] for c in ("name", "证券简称", "股票简称", "名称") if c in cols), None)
+        code_col = next((cols[c] for c in ("code", "证券代码", "股票代码", "代码") if c in cols), None)
+        if name_col and code_col:
+            for _, row in frame.iterrows():
+                name = str(row.get(name_col, "")).strip()
+                code = str(row.get(code_col, "")).strip()
+                if name and _BARE_ASHARE.fullmatch(code):
+                    rows.append((name, _ashare_suffix(code), "CN"))
+    except Exception:
+        pass
+    _DYNAMIC_UNIVERSE_CACHE = rows
+    return rows
+
+
+def resolve_symbol(query: str, *, allow_network: bool = False) -> dict:
     """Resolve a company name, Chinese alias, bare 6-digit A-share code, or ticker into a standard symbol."""
     if not isinstance(query, str) or not query.strip() or len(query) > 80:
         raise ValueError("query must be a non-empty string of at most 80 characters")
@@ -228,6 +255,10 @@ def resolve_symbol(query: str) -> dict:
     for alias, (sym, name, market) in ALIASES.items():
         if len(alias) >= 2 and (alias in raw or alias in key):
             return {"success": True, "query": raw, "symbol": sym, "name": name, "market": market, "resolution": "substring_alias"}
+    if allow_network:
+        for name, sym, market in _load_dynamic_akshare_universe():
+            if name == raw or (len(name) >= 2 and name in raw):
+                return {"success": True, "query": raw, "symbol": sym, "name": name, "market": market, "resolution": "akshare_universe"}
     candidate = raw.upper()
     if _VALID_TICKER.fullmatch(candidate) and ".." not in candidate and candidate[0] not in "./":
         market = ("CN" if candidate.endswith((".SS", ".SZ", ".BJ")) else

@@ -112,3 +112,11 @@ def test_correlation_matrix_and_stat_arb_and_symbol_resolution():
     assert api.resolve_symbol("路易威登")["symbol"] == "MC.PA"
     assert api.resolve_symbol("600036")["symbol"] == "600036.SS"
     assert api.resolve_symbol("700.HK")["symbol"] == "0700.HK"
+
+    from arthera_finance import symbols
+    symbols._DYNAMIC_UNIVERSE_CACHE = [("珀莱雅", "603605.SS", "CN")]
+    try:
+        res = symbols.resolve_symbol("请分析珀莱雅", allow_network=True)
+        assert res["symbol"] == "603605.SS" and res["resolution"] == "akshare_universe"
+    finally:
+        symbols._DYNAMIC_UNIVERSE_CACHE = None
