@@ -120,3 +120,9 @@ def test_correlation_matrix_and_stat_arb_and_symbol_resolution():
         assert res["symbol"] == "603605.SS" and res["resolution"] == "akshare_universe"
     finally:
         symbols._DYNAMIC_UNIVERSE_CACHE = None
+
+    pb = server.invoke(analytics.portfolio_backtest, {"A": a, "B": b}, {"A": 0.6, "B": 0.4}, c, "monthly")
+    assert pb["success"] is True
+    assert pb["portfolio"]["ending_equity"] > 0
+    assert pb["benchmark"]["ending_equity"] > 0
+

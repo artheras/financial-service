@@ -362,3 +362,97 @@ def stat_arb(closes_a, closes_b, window=20, entry_z=2.0, stop_z=3.5):
             "half_life_periods is null when the AR(1) slope is not mean-reverting.",
         ],
     }
+
+
+def portfolio_backtest(prices, weights=None, benchmark_closes=None, rebalance="monthly",
+                       risk_free_rate=0.04, periods_per_year=252):
+    if not isinstance(prices, dict) or not 1 <= len(prices) <= 20:
+        raise ValueError("prices requires 1..20 symbols")
+    if rebalance not in ("monthly", "quarterly", "none"):
+        raise ValueError("rebalance must be monthly, quarterly or none")
+    if isinstance(risk_free_rate, bool) or not isinstance(risk_free_rate, (int, float)) or not -0.1 <= risk_free_rate <= 0.5:
+        raise ValueError("risk_free_rate must be a number from -0.1 to 0.5")
+    if type(periods_per_year) is not int or not 1 <= periods_per_year <= 100000:
+        raise ValueError("periods_per_year must be an integer from 1 to 100000")
+    symbols, series = list(prices), []
+    for symbol in symbols:
+        if not isinstance(symbol, str) or not _SYMBOL.fullmatch(symbol) or ".." in symbol or symbol[0] in "./":
+            raise ValueError("Invalid symbol")
+        series.append(_series(prices[symbol], f"prices[{symbol}]", 20))
+    if len({len(s) for s in series}) != 1:
+        raise ValueError("Every symbol needs the same number of closes, aligned on the same dates")
+    n, m = len(symbols), len(series[0])
+    if weights is None:
+        w = [1.0 / n] * n
+    else:
+        if not isinstance(weights, dict) or set(weights) != set(symbols):
+            raise ValueError("weights must be an object with one non-negative weight per symbol in prices")
+        raw_w = []
+        for s in symbols:
+            v = weights[s]
+            if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or v < 0:
+                raise ValueError(f"weights[{s}] must be a non-negative finite number")
+            raw_w.append(float(v))
+        total_w = sum(raw_w)
+        if total_w <= 0:
+            raise ValueError("weights must sum to a positive number")
+        w = [v / total_w for v in raw_w]
+
+    reb_step = 21 if rebalance == "monthly" else 63 if rebalance == "quarterly" else None
+    holdings = list(w)
+    equity = [1.0]
+    for t in range(1, m):
+        if reb_step is not None and (t - 1) > 0 and (t - 1) % reb_step == 0:
+            total_val = sum(holdings)
+            holdings = [total_val * target for target in w]
+        holdings = [holdings[i] * (series[i][t] / series[i][t - 1]) for i in range(n)]
+        equity.append(sum(holdings))
+
+    def _curve_metrics(eq):
+        rets = [b / a - 1.0 for a, b in zip(eq, eq[1:])]
+        tot_ret = eq[-1] / eq[0] - 1.0
+        vol = _stdev(rets) * math.sqrt(periods_per_year) if len(rets) >= 2 else 0.0
+        ann_ret = _mean(rets) * periods_per_year if rets else 0.0
+        sharpe = (ann_ret - risk_free_rate) / vol if vol > 1e-12 else None
+        peak = eq[0]
+        max_dd = 0.0
+        for val in eq:
+            if val > peak:
+                peak = val
+            dd = (val - peak) / peak if peak > 0 else 0.0
+            if dd < max_dd:
+                max_dd = dd
+        calmar = tot_ret / abs(max_dd) if max_dd < -1e-12 else None
+        return {
+            "total_return": _r(tot_ret, 4),
+            "annualized_return": _r(ann_ret, 4),
+            "annualized_volatility": _r(vol, 4),
+            "sharpe": _r(sharpe, 3),
+            "max_drawdown": _r(max_dd, 4),
+            "calmar": _r(calmar, 3),
+            "ending_equity": _r(eq[-1], 4),
+        }
+
+    benchmark = None
+    if benchmark_closes is not None:
+        b_series = _series(benchmark_closes, "benchmark_closes", m)
+        if len(b_series) != m:
+            raise ValueError("benchmark_closes must have the same length as each symbol in prices")
+        b_eq = [v / b_series[0] for v in b_series]
+        benchmark = _curve_metrics(b_eq)
+
+    return {
+        "success": True,
+        "rebalance": rebalance,
+        "weights": {s: round(weight, 4) for s, weight in zip(symbols, w)},
+        "portfolio": _curve_metrics(equity),
+        "benchmark": benchmark,
+        "equity_curve_tail": [round(v, 4) for v in equity[-60:]],
+        "observations": m,
+        "source": "caller-supplied closes",
+        "limitations": [
+            "Rebalance intervals use 21 trading bars for monthly and 63 for quarterly.",
+            "Does not deduct transaction costs or taxes on rebalance turnovers.",
+        ],
+    }
+

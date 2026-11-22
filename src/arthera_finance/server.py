@@ -127,6 +127,15 @@ def financial_stat_arb(closes_a: list[StrictFloat], closes_b: list[StrictFloat],
     return invoke(analytics.stat_arb, closes_a, closes_b, window, entry_z, stop_z)
 
 
+@mcp.tool(annotations=READ)
+def financial_portfolio_backtest(prices: dict[str, list[StrictFloat]], weights: dict[str, StrictFloat] | None = None,
+                                 benchmark_closes: list[StrictFloat] | None = None, rebalance: str = "monthly",
+                                 risk_free_rate: StrictFloat = 0.04, periods_per_year: StrictInt = 252) -> dict:
+    """Simulate a multi-asset portfolio over date-aligned close series for 1..20 symbols with monthly, quarterly, or buy-and-hold rebalancing, optional benchmark comparison, total return, volatility, Sharpe, max drawdown, and Calmar ratio. No network."""
+    return invoke(analytics.portfolio_backtest, prices, weights, benchmark_closes, rebalance, risk_free_rate, periods_per_year)
+
+
+
 @mcp.tool(annotations=REMOTE_READ)
 def financial_market_history(symbol: str, days: StrictInt = 90) -> dict:
     """Fetch unadjusted daily Yahoo history only when the host enabled networking. Reports source and dates; not a live quote."""

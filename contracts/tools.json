@@ -1,6 +1,5 @@
 {
-  "version": 1,
-  "transport": "stdio",
+  "server": "arthera-finance",
   "tools": [
     {
       "name": "financial_service_info",
@@ -472,6 +471,80 @@
           "closes_b"
         ],
         "title": "financial_stat_arbArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "financial_portfolio_backtest",
+      "description": "Simulate a multi-asset portfolio over date-aligned close series for 1..20 symbols with monthly, quarterly, or buy-and-hold rebalancing, optional benchmark comparison, total return, volatility, Sharpe, max drawdown, and Calmar ratio. No network.",
+      "inputSchema": {
+        "properties": {
+          "prices": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "Prices",
+            "type": "object"
+          },
+          "weights": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Weights"
+          },
+          "benchmark_closes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Benchmark Closes"
+          },
+          "rebalance": {
+            "default": "monthly",
+            "title": "Rebalance",
+            "type": "string"
+          },
+          "risk_free_rate": {
+            "default": 0.04,
+            "title": "Risk Free Rate",
+            "type": "number"
+          },
+          "periods_per_year": {
+            "default": 252,
+            "title": "Periods Per Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "prices"
+        ],
+        "title": "financial_portfolio_backtestArguments",
         "type": "object"
       },
       "annotations": {
@@ -1171,5 +1244,6 @@
         "openWorldHint": true
       }
     }
-  ]
+  ],
+  "version": "0.1.0"
 }
