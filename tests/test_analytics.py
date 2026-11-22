@@ -138,4 +138,10 @@ def test_correlation_matrix_and_stat_arb_and_symbol_resolution():
     assert audit["real_gap_days"] >= 10
     assert audit["quality_score"] < 100.0
 
+    rc_ok = server.invoke(analytics.pretrade_risk_check, 0.20)
+    assert rc_ok["success"] is True and rc_ok["allowed"] is True and rc_ok["requires_approval"] is True
+    rc_bad = server.invoke(analytics.pretrade_risk_check, 0.60, 1.5, 0.25, 0.01, True)
+    assert rc_bad["success"] is True and rc_bad["allowed"] is False and len(rc_bad["violations"]) >= 4
+
+
 

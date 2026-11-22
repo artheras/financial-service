@@ -142,6 +142,19 @@ def financial_ohlcv_quality_audit(bars: list[dict], outlier_threshold: StrictFlo
     return invoke(analytics.ohlcv_quality_audit, bars, outlier_threshold, window)
 
 
+@mcp.tool(annotations=READ)
+def financial_pretrade_risk_check(target_weight: StrictFloat, gross_leverage: StrictFloat = 1.0,
+                                  current_drawdown_pct: StrictFloat = 0.0, cash_reserve_pct: StrictFloat = 1.0,
+                                  is_short: bool = False, max_position_weight: StrictFloat = 0.50,
+                                  max_leverage: StrictFloat = 1.0, max_drawdown_pct: StrictFloat = 0.20,
+                                  approval_required_above_weight: StrictFloat = 0.15,
+                                  min_cash_reserve_pct: StrictFloat = 0.05, allow_short: bool = False) -> dict:
+    """Pre-trade compliance check for a proposed position or order against position weight, gross leverage, drawdown circuit-breaker, cash reserve floor, human approval threshold, and short-selling policy. No network."""
+    return invoke(analytics.pretrade_risk_check, target_weight, gross_leverage, current_drawdown_pct,
+                  cash_reserve_pct, is_short, max_position_weight, max_leverage, max_drawdown_pct,
+                  approval_required_above_weight, min_cash_reserve_pct, allow_short)
+
+
 
 @mcp.tool(annotations=REMOTE_READ)
 def financial_market_history(symbol: str, days: StrictInt = 90) -> dict:

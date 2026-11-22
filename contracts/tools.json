@@ -592,6 +592,79 @@
       }
     },
     {
+      "name": "financial_pretrade_risk_check",
+      "description": "Pre-trade compliance check for a proposed position or order against position weight, gross leverage, drawdown circuit-breaker, cash reserve floor, human approval threshold, and short-selling policy. No network.",
+      "inputSchema": {
+        "properties": {
+          "target_weight": {
+            "title": "Target Weight",
+            "type": "number"
+          },
+          "gross_leverage": {
+            "default": 1.0,
+            "title": "Gross Leverage",
+            "type": "number"
+          },
+          "current_drawdown_pct": {
+            "default": 0.0,
+            "title": "Current Drawdown Pct",
+            "type": "number"
+          },
+          "cash_reserve_pct": {
+            "default": 1.0,
+            "title": "Cash Reserve Pct",
+            "type": "number"
+          },
+          "is_short": {
+            "default": false,
+            "title": "Is Short",
+            "type": "boolean"
+          },
+          "max_position_weight": {
+            "default": 0.5,
+            "title": "Max Position Weight",
+            "type": "number"
+          },
+          "max_leverage": {
+            "default": 1.0,
+            "title": "Max Leverage",
+            "type": "number"
+          },
+          "max_drawdown_pct": {
+            "default": 0.2,
+            "title": "Max Drawdown Pct",
+            "type": "number"
+          },
+          "approval_required_above_weight": {
+            "default": 0.15,
+            "title": "Approval Required Above Weight",
+            "type": "number"
+          },
+          "min_cash_reserve_pct": {
+            "default": 0.05,
+            "title": "Min Cash Reserve Pct",
+            "type": "number"
+          },
+          "allow_short": {
+            "default": false,
+            "title": "Allow Short",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "target_weight"
+        ],
+        "title": "financial_pretrade_risk_checkArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "financial_market_history",
       "description": "Fetch unadjusted daily Yahoo history only when the host enabled networking. Reports source and dates; not a live quote.",
       "inputSchema": {

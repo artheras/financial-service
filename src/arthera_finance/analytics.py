@@ -569,3 +569,79 @@ def ohlcv_quality_audit(bars, outlier_threshold=4.0, window=20):
     }
 
 
+def pretrade_risk_check(
+    target_weight,
+    gross_leverage=1.0,
+    current_drawdown_pct=0.0,
+    cash_reserve_pct=1.0,
+    is_short=False,
+    max_position_weight=0.50,
+    max_leverage=1.0,
+    max_drawdown_pct=0.20,
+    approval_required_above_weight=0.15,
+    min_cash_reserve_pct=0.05,
+    allow_short=False,
+):
+    """Evaluate a proposed position or order against hierarchical pre-trade risk limits (position concentration, gross leverage, drawdown circuit-breaker, cash reserve floor, and short-selling gate)."""
+    def _num(val, name, lo=0.0, hi=10.0):
+        if isinstance(val, bool) or not isinstance(val, (int, float)) or not math.isfinite(val):
+            raise ValueError(f"{name} must be a finite number")
+        v = float(val)
+        if not (lo <= v <= hi):
+            raise ValueError(f"{name} must be between {lo} and {hi}")
+        return v
+
+    if not isinstance(is_short, bool) or not isinstance(allow_short, bool):
+        raise ValueError("is_short and allow_short must be booleans")
+
+    target_weight = _num(target_weight, "target_weight", 0.0, 2.0)
+    gross_leverage = _num(gross_leverage, "gross_leverage", 0.0, 20.0)
+    current_drawdown_pct = _num(current_drawdown_pct, "current_drawdown_pct", 0.0, 1.0)
+    cash_reserve_pct = _num(cash_reserve_pct, "cash_reserve_pct", 0.0, 1.0)
+    max_position_weight = _num(max_position_weight, "max_position_weight", 0.01, 1.0)
+    max_leverage = _num(max_leverage, "max_leverage", 0.1, 20.0)
+    max_drawdown_pct = _num(max_drawdown_pct, "max_drawdown_pct", 0.01, 1.0)
+    approval_required_above_weight = _num(approval_required_above_weight, "approval_required_above_weight", 0.0, 1.0)
+    min_cash_reserve_pct = _num(min_cash_reserve_pct, "min_cash_reserve_pct", 0.0, 1.0)
+
+    violations = []
+    warnings = []
+    if is_short and not allow_short:
+        violations.append("Short selling is disabled by effective risk policy.")
+    if target_weight > max_position_weight:
+        violations.append(f"Target weight {target_weight:.2%} exceeds max_position_weight {max_position_weight:.2%}.")
+    if gross_leverage > max_leverage:
+        violations.append(f"Gross leverage {gross_leverage:.2f}x exceeds max_leverage {max_leverage:.2f}x.")
+    if current_drawdown_pct >= max_drawdown_pct:
+        violations.append(f"Current drawdown {current_drawdown_pct:.2%} reached circuit-breaker {max_drawdown_pct:.2%}.")
+    if cash_reserve_pct < min_cash_reserve_pct:
+        violations.append(f"Cash reserve {cash_reserve_pct:.2%} is below min_cash_reserve_pct {min_cash_reserve_pct:.2%}.")
+
+    requires_approval = (not violations) and (target_weight > approval_required_above_weight)
+    if requires_approval:
+        warnings.append(
+            f"Target weight {target_weight:.2%} exceeds approval threshold {approval_required_above_weight:.2%}."
+        )
+
+    return {
+        "success": True,
+        "allowed": len(violations) == 0,
+        "requires_approval": requires_approval,
+        "violations": violations,
+        "warnings": warnings,
+        "effective_policy": {
+            "max_position_weight": max_position_weight,
+            "max_leverage": max_leverage,
+            "max_drawdown_pct": max_drawdown_pct,
+            "approval_required_above_weight": approval_required_above_weight,
+            "min_cash_reserve_pct": min_cash_reserve_pct,
+            "allow_short": allow_short,
+        },
+        "source": "caller-supplied risk parameters",
+        "limitations": [
+            "Evaluates static pre-trade thresholds; does not model intraday liquidity or margin calls.",
+        ],
+    }
+
+
+
