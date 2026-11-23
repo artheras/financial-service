@@ -139,3 +139,15 @@ def test_industry_kpis_saas_and_semiconductor():
     assert semi["metrics"]["book_to_bill"] == 1.15
     assert semi["metrics"]["cycle_phase_indicator"] == "upcycle_expansion"
     assert semi["metrics"]["gross_margin_change_bps"] == 500.0
+
+
+def test_server_cli_supports_stdio_and_streamable_http():
+    from arthera_finance.server import build_arg_parser
+
+    default_args = build_arg_parser().parse_args([])
+    assert default_args.transport == "stdio"
+
+    http_args = build_arg_parser().parse_args(["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "9000"])
+    assert http_args.transport == "streamable-http"
+    assert http_args.host == "0.0.0.0"
+    assert http_args.port == 9000

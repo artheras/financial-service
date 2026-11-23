@@ -1,4 +1,5 @@
-"""Local stdio MCP endpoint. No account mutations, file tools or order execution."""
+"""Local stdio or Streamable HTTP MCP endpoint. No account mutations, file tools or order execution."""
+import argparse
 import logging
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
@@ -374,8 +375,39 @@ def financial_industry_kpis(industry: str, metrics: dict) -> dict:
     return invoke(industry_kpis.industry_kpis, industry, metrics)
 
 
-def main():
-    mcp.run(transport="stdio")
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="arthera-financial-service",
+        description="Arthera Financial Service MCP server (stdio by default, or Streamable HTTP).",
+    )
+    parser.add_argument(
+        "--transport",
+        choices=("stdio", "streamable-http"),
+        default="stdio",
+        help="MCP transport mode (default: stdio).",
+    )
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Bind host for streamable-http transport (default: 127.0.0.1).",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8765,
+        help="Bind port for streamable-http transport (default: 8765).",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None):
+    args = build_arg_parser().parse_args(argv)
+    if args.transport == "streamable-http":
+        mcp.settings.host = args.host
+        mcp.settings.port = args.port
+        mcp.run(transport="streamable-http")
+    else:
+        mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":
