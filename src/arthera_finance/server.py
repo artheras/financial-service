@@ -3,7 +3,7 @@ import logging
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from pydantic import StrictFloat, StrictInt
-from . import __version__, analytics, api, strategies
+from . import __version__, analytics, api, due_diligence, industry_kpis, strategies, valuation
 from .sec_statements import parse_annual_statements, SECError
 from .brokers import service as broker_service
 from .brokers.worker import call as broker_query
@@ -312,6 +312,66 @@ def financial_broker_positions(connection_id: str, limit: StrictInt = 50) -> dic
 def financial_broker_orders(connection_id: str, status: str = "all", limit: StrictInt = 50) -> dict:
     """Read existing broker orders; cannot place, modify, cancel or confirm an order."""
     return broker_query(connection_id, "orders", status, limit)
+
+
+@mcp.tool(annotations=READ)
+def financial_dcf_valuation(
+    base_fcf: StrictFloat,
+    growth_rates: list[StrictFloat],
+    wacc: StrictFloat,
+    terminal_growth: StrictFloat = 0.025,
+    net_debt: StrictFloat = 0.0,
+    diluted_shares: StrictFloat = 1.0,
+    current_price: StrictFloat | None = None,
+    wacc_steps: list[StrictFloat] | None = None,
+    terminal_growth_steps: list[StrictFloat] | None = None,
+) -> dict:
+    """Deterministic Gordon-Growth DCF valuation with year-by-year FCF projections and a 2D WACC x terminal-growth sensitivity matrix. No network."""
+    return invoke(
+        valuation.dcf_valuation,
+        base_fcf,
+        growth_rates,
+        wacc,
+        terminal_growth,
+        net_debt,
+        diluted_shares,
+        current_price,
+        wacc_steps,
+        terminal_growth_steps,
+    )
+
+
+@mcp.tool(annotations=READ)
+def financial_due_diligence_red_flags(
+    current: dict,
+    prior: dict | None = None,
+    governance: dict | None = None,
+    insider_transactions: list[dict] | None = None,
+    current_risk_factors: list[str] | None = None,
+    prior_risk_factors: list[str] | None = None,
+) -> dict:
+    """Screen caller-supplied company disclosures for P0/P1/P2 due diligence red flags: Beneish M-Score, accruals divergence, receivables vs revenue spread, governance/concentration flags, Form 4 insider net selling, and 10-K risk-factor diff. No network."""
+    return invoke(
+        due_diligence.due_diligence_red_flags,
+        current,
+        prior,
+        governance,
+        insider_transactions,
+        current_risk_factors,
+        prior_risk_factors,
+    )
+
+
+@mcp.tool(annotations=REMOTE_READ)
+def financial_sec_filing_monitor(symbol: str, limit: StrictInt = 20) -> dict:
+    """Fetch recent official SEC EDGAR filings (10-K, 10-Q, 8-K, Form 4, SC 13D/13G, DEF 14A) with direct sec.gov provenance URLs when the host enabled networking."""
+    return invoke(due_diligence.sec_filing_monitor, symbol, limit)
+
+
+@mcp.tool(annotations=READ)
+def financial_industry_kpis(industry: str, metrics: dict) -> dict:
+    """Compute vertical sector KPIs for 'saas' (Rule of 40, NDR, Magic Number, LTV/CAC, CAC Payback, Burn Multiple) or 'semiconductor' (DIO & YoY change, Book-to-Bill, CapEx/R&D intensity, operating leverage, cycle phase) from caller-supplied inputs. No network."""
+    return invoke(industry_kpis.industry_kpis, industry, metrics)
 
 
 def main():

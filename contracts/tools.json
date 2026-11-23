@@ -1353,6 +1353,252 @@
         "idempotentHint": true,
         "openWorldHint": true
       }
+    },
+    {
+      "name": "financial_dcf_valuation",
+      "description": "Deterministic Gordon-Growth DCF valuation with year-by-year FCF projections and a 2D WACC x terminal-growth sensitivity matrix. No network.",
+      "inputSchema": {
+        "properties": {
+          "base_fcf": {
+            "title": "Base Fcf",
+            "type": "number"
+          },
+          "growth_rates": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Growth Rates",
+            "type": "array"
+          },
+          "wacc": {
+            "title": "Wacc",
+            "type": "number"
+          },
+          "terminal_growth": {
+            "default": 0.025,
+            "title": "Terminal Growth",
+            "type": "number"
+          },
+          "net_debt": {
+            "default": 0.0,
+            "title": "Net Debt",
+            "type": "number"
+          },
+          "diluted_shares": {
+            "default": 1.0,
+            "title": "Diluted Shares",
+            "type": "number"
+          },
+          "current_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Current Price"
+          },
+          "wacc_steps": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Wacc Steps"
+          },
+          "terminal_growth_steps": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Terminal Growth Steps"
+          }
+        },
+        "required": [
+          "base_fcf",
+          "growth_rates",
+          "wacc"
+        ],
+        "title": "financial_dcf_valuationArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "financial_due_diligence_red_flags",
+      "description": "Screen caller-supplied company disclosures for P0/P1/P2 due diligence red flags: Beneish M-Score, accruals divergence, receivables vs revenue spread, governance/concentration flags, Form 4 insider net selling, and 10-K risk-factor diff. No network.",
+      "inputSchema": {
+        "properties": {
+          "current": {
+            "additionalProperties": true,
+            "title": "Current",
+            "type": "object"
+          },
+          "prior": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prior"
+          },
+          "governance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Governance"
+          },
+          "insider_transactions": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Insider Transactions"
+          },
+          "current_risk_factors": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Current Risk Factors"
+          },
+          "prior_risk_factors": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prior Risk Factors"
+          }
+        },
+        "required": [
+          "current"
+        ],
+        "title": "financial_due_diligence_red_flagsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "financial_sec_filing_monitor",
+      "description": "Fetch recent official SEC EDGAR filings (10-K, 10-Q, 8-K, Form 4, SC 13D/13G, DEF 14A) with direct sec.gov provenance URLs when the host enabled networking.",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "limit": {
+            "default": 20,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "title": "financial_sec_filing_monitorArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "financial_industry_kpis",
+      "description": "Compute vertical sector KPIs for 'saas' (Rule of 40, NDR, Magic Number, LTV/CAC, CAC Payback, Burn Multiple) or 'semiconductor' (DIO & YoY change, Book-to-Bill, CapEx/R&D intensity, operating leverage, cycle phase) from caller-supplied inputs. No network.",
+      "inputSchema": {
+        "properties": {
+          "industry": {
+            "title": "Industry",
+            "type": "string"
+          },
+          "metrics": {
+            "additionalProperties": true,
+            "title": "Metrics",
+            "type": "object"
+          }
+        },
+        "required": [
+          "industry",
+          "metrics"
+        ],
+        "title": "financial_industry_kpisArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
     }
   ],
   "version": "0.1.0"
