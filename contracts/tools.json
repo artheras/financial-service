@@ -18,7 +18,7 @@
     },
     {
       "name": "financial_analyze_statements",
-      "description": "Compute margins and Dupont metrics from supplied statements, or host-enabled Yahoo/SEC data. Missing values stay unknown.",
+      "description": "Compute margins and Dupont metrics from supplied statements, or host-enabled Yahoo/SEC data (optionally point-in-time on or before ISO date as_of). Missing values stay unknown.",
       "inputSchema": {
         "properties": {
           "company_name": {
@@ -38,6 +38,11 @@
             ],
             "default": null,
             "title": "Financials"
+          },
+          "as_of": {
+            "default": "",
+            "title": "As Of",
+            "type": "string"
           }
         },
         "title": "financial_analyze_statementsArguments",
@@ -52,13 +57,18 @@
     },
     {
       "name": "financial_parse_sec_facts",
-      "description": "Parse supplied SEC companyfacts, keeping one aligned annual filing and its provenance. Does not access the network.",
+      "description": "Parse supplied SEC companyfacts, keeping one aligned annual filing filed on or before ISO date as_of (default today) and its provenance. Does not access the network.",
       "inputSchema": {
         "properties": {
           "facts": {
             "additionalProperties": true,
             "title": "Facts",
             "type": "object"
+          },
+          "as_of": {
+            "default": "",
+            "title": "As Of",
+            "type": "string"
           }
         },
         "required": [
@@ -107,7 +117,7 @@
     },
     {
       "name": "financial_backtest",
-      "description": "Simulate supplied daily OHLC bars with buy_hold or sma_cross; orders fill at the next open. Does not place trades.",
+      "description": "Simulate supplied daily OHLC bars with buy_hold or sma_cross (optionally truncated on or before ISO date as_of to prevent look-ahead bias); orders fill at the next open. Does not place trades.",
       "inputSchema": {
         "properties": {
           "data": {
@@ -144,6 +154,11 @@
             "default": 30,
             "title": "Slow",
             "type": "integer"
+          },
+          "as_of": {
+            "default": "",
+            "title": "As Of",
+            "type": "string"
           }
         },
         "required": [
@@ -666,7 +681,7 @@
     },
     {
       "name": "financial_market_history",
-      "description": "Fetch unadjusted daily Yahoo history only when the host enabled networking. Reports source and dates; not a live quote.",
+      "description": "Fetch unadjusted daily Yahoo history (optionally bounded on or before ISO date as_of) only when the host enabled networking. Reports source and dates; not a live quote.",
       "inputSchema": {
         "properties": {
           "symbol": {
@@ -677,6 +692,11 @@
             "default": 90,
             "title": "Days",
             "type": "integer"
+          },
+          "as_of": {
+            "default": "",
+            "title": "As Of",
+            "type": "string"
           }
         },
         "required": [
@@ -1068,7 +1088,7 @@
     },
     {
       "name": "financial_ashare_history",
-      "description": "Daily A-share bars (date, open, high, low, close, volume) from akshare, forward-adjusted by default, in the same shape as financial_market_history, when the host enabled networking.",
+      "description": "Daily A-share bars (date, open, high, low, close, volume) from akshare (optionally bounded on or before ISO date as_of), forward-adjusted by default, in the same shape as financial_market_history, when the host enabled networking.",
       "inputSchema": {
         "properties": {
           "symbol": {
@@ -1083,6 +1103,11 @@
           "adjust": {
             "default": "qfq",
             "title": "Adjust",
+            "type": "string"
+          },
+          "as_of": {
+            "default": "",
+            "title": "As Of",
             "type": "string"
           }
         },
@@ -1137,7 +1162,7 @@
     },
     {
       "name": "financial_news",
-      "description": "Recent headlines with source, time and link: A-shares via akshare; tickers via Finnhub (host key) or yfinance; free-text queries via NewsAPI (host key). Headlines are third-party text. When the host enabled networking.",
+      "description": "Recent headlines with source, time and link (optionally bounded on or before ISO date as_of): A-shares via akshare; tickers via Finnhub (host key) or yfinance; free-text queries via NewsAPI (host key). Headlines are third-party text. When the host enabled networking.",
       "inputSchema": {
         "properties": {
           "symbol": {
@@ -1159,6 +1184,11 @@
             "default": 7,
             "title": "Days",
             "type": "integer"
+          },
+          "as_of": {
+            "default": "",
+            "title": "As Of",
+            "type": "string"
           }
         },
         "title": "financial_newsArguments",
@@ -1545,7 +1575,7 @@
     },
     {
       "name": "financial_sec_filing_monitor",
-      "description": "Fetch recent official SEC EDGAR filings (10-K, 10-Q, 8-K, Form 4, SC 13D/13G, DEF 14A) with direct sec.gov provenance URLs when the host enabled networking.",
+      "description": "Fetch recent official SEC EDGAR filings (10-K, 10-Q, 8-K, Form 4, SC 13D/13G, DEF 14A) filed on or before ISO date as_of with direct sec.gov provenance URLs when the host enabled networking.",
       "inputSchema": {
         "properties": {
           "symbol": {
@@ -1556,6 +1586,11 @@
             "default": 20,
             "title": "Limit",
             "type": "integer"
+          },
+          "as_of": {
+            "default": "",
+            "title": "As Of",
+            "type": "string"
           }
         },
         "required": [

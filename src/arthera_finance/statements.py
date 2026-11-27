@@ -58,7 +58,7 @@ def compute_financial_metrics(income: dict, balance: dict, cashflow: dict) -> di
     }
 
 
-def _fetch_yahoo_statements(symbol: str):
+def _fetch_yahoo_statements(symbol: str, as_of=None):
     import yfinance as yf
     from curl_cffi.requests import Session
 
@@ -85,7 +85,9 @@ def _fetch_yahoo_statements(symbol: str):
         if inc_df.empty or bal_df.empty:
             raise ValueError("empty_statements")
         periods = inc_df.columns.intersection(bal_df.columns)
-        if periods.empty:
+        if as_of is not None:
+            periods = [p for p in periods if getattr(p, "date", lambda: p)() <= as_of]
+        if len(periods) == 0:
             raise ValueError("no_common_period")
         period = max(periods)
         inc, bal = inc_df[period], bal_df[period]
@@ -113,6 +115,7 @@ def _fetch_yahoo_statements(symbol: str):
 
 def tool_analyze_financial_statements(params: Dict[str, Any]) -> Dict[str, Any]:
     company_name = str(params.get("company_name") or "").strip().upper()
+    as_of = params.get("as_of")
     data = params.get("financials") or {}
     if not isinstance(data, dict):
         return {"success": False, "error_code": "invalid_financials", "error": "financials must be an object"}
@@ -129,19 +132,35 @@ def tool_analyze_financial_statements(params: Dict[str, Any]) -> Dict[str, Any]:
         if not params.get("network_enabled", True):
             diagnosis = "network_disabled"
         else:
-            try:
-                income, balance, period = _fetch_yahoo_statements(company_name)
-                source = f"yfinance:{company_name}"
-            except ImportError:
-                diagnosis = "dependency_missing"
-            except TimeoutError:
-                diagnosis = "source_timeout"
-            except ValueError as exc:
-                diagnosis = str(exc) if str(exc) in {"empty_statements", "no_common_period"} else "source_error"
-            except Exception:
-                diagnosis = "source_unavailable"
-            source_attempts.append({'source': 'yfinance', 'success': bool(income), 'error_code': None if income else diagnosis})
+            if as_of is not None:
+                from .sec_statements import SECError, fetch_annual_statements
+                try:
+                    disclosure = fetch_annual_statements(company_name, as_of=as_of)
+                    income, balance = disclosure['income_statement'], disclosure['balance_sheet']
+                    cashflow, period = disclosure['cashflow'], disclosure['period']
+                    source = f"sec-edgar:{company_name}"
+                    source_attempts.append({'source': 'sec-edgar', 'success': True})
+                except SECError as exc:
+                    diagnosis = exc.code
+                    source_attempts.append({'source': 'sec-edgar', 'success': False, 'error_code': exc.code})
             if not income:
+                try:
+                    income, balance, period = (
+                        _fetch_yahoo_statements(company_name)
+                        if as_of is None
+                        else _fetch_yahoo_statements(company_name, as_of=as_of)
+                    )
+                    source = f"yfinance:{company_name}"
+                except ImportError:
+                    diagnosis = "dependency_missing"
+                except TimeoutError:
+                    diagnosis = "source_timeout"
+                except ValueError as exc:
+                    diagnosis = str(exc) if str(exc) in {"empty_statements", "no_common_period"} else "source_error"
+                except Exception:
+                    diagnosis = "source_unavailable"
+                source_attempts.append({'source': 'yfinance', 'success': bool(income), 'error_code': None if income else diagnosis})
+            if not income and as_of is None:
                 from .sec_statements import SECError, fetch_annual_statements
                 try:
                     disclosure = fetch_annual_statements(company_name)
@@ -171,6 +190,12 @@ def tool_analyze_financial_statements(params: Dict[str, Any]) -> Dict[str, Any]:
     except ValueError as exc:
         return {"success": False, "error_code": "invalid_financials", "error": str(exc)}
     metrics.update(company_name=company_name, data_source=source, period=period)
+    if as_of is not None:
+        metrics["as_of"] = as_of.isoformat()
+        if source.startswith("yfinance:"):
+            metrics["limitations"].append(
+                "Yahoo statement columns reflect fiscal period-end dates without official filing timestamps; verify filing lag for strict point-in-time backtests."
+            )
     if disclosure:
         metrics.update({key: value for key, value in disclosure.items() if key not in {'income_statement', 'balance_sheet', 'cashflow'}})
         metrics['limitations'].append('SEC metrics describe the disclosed annual period, not live market data. Cash flow was not evaluated.')

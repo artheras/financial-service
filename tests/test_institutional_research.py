@@ -151,3 +151,78 @@ def test_server_cli_supports_stdio_and_streamable_http():
     assert http_args.transport == "streamable-http"
     assert http_args.host == "0.0.0.0"
     assert http_args.port == 9000
+
+
+async def test_mcp_exposes_ic_memo_skill_prompt():
+    from arthera_finance.server import mcp
+    prompts = await mcp.list_prompts()
+    names = {p.name for p in prompts}
+    assert "ic-memo-due-diligence" in names
+    rendered = await mcp.get_prompt("ic-memo-due-diligence")
+    assert any("Point-in-time" in getattr(m.content, "text", "") for m in rendered.messages)
+
+
+def test_point_in_time_as_of_prevents_lookahead_bias():
+    from arthera_finance import server
+
+    bars = {
+        "AAPL": [
+            {"date": "2024-01-02", "open": 100.0, "high": 102.0, "low": 99.0, "close": 101.0, "volume": 1000.0},
+            {"date": "2024-01-03", "open": 101.0, "high": 104.0, "low": 100.0, "close": 103.0, "volume": 1100.0},
+            {"date": "2024-01-04", "open": 103.0, "high": 150.0, "low": 103.0, "close": 149.0, "volume": 5000.0},
+        ]
+    }
+    res = server.financial_backtest(bars, strategy="buy_hold", as_of="2024-01-03")
+    assert res["success"] is True
+    assert res["as_of"] == "2024-01-03"
+    assert res["result"]["equity_curve"][-1]["date"] == "2024-01-03"
+
+    sec_payload = {
+        "cik": 320193,
+        "entityName": "Apple Inc.",
+        "facts": {
+            "us-gaap": {
+                "Revenues": {
+                    "units": {
+                        "USD": [
+                            {"start": "2022-01-01", "end": "2022-12-31", "filed": "2023-02-15", "form": "10-K", "accn": "0001-23-000001", "val": 1000},
+                            {"start": "2023-01-01", "end": "2023-12-31", "filed": "2024-02-20", "form": "10-K", "accn": "0001-24-000001", "val": 2000},
+                        ]
+                    }
+                },
+                "NetIncomeLoss": {
+                    "units": {
+                        "USD": [
+                            {"start": "2022-01-01", "end": "2022-12-31", "filed": "2023-02-15", "form": "10-K", "accn": "0001-23-000001", "val": 150},
+                            {"start": "2023-01-01", "end": "2023-12-31", "filed": "2024-02-20", "form": "10-K", "accn": "0001-24-000001", "val": 350},
+                        ]
+                    }
+                },
+                "Assets": {
+                    "units": {
+                        "USD": [
+                            {"end": "2022-12-31", "filed": "2023-02-15", "form": "10-K", "accn": "0001-23-000001", "val": 5000},
+                            {"end": "2023-12-31", "filed": "2024-02-20", "form": "10-K", "accn": "0001-24-000001", "val": 8000},
+                        ]
+                    }
+                },
+                "StockholdersEquity": {
+                    "units": {
+                        "USD": [
+                            {"end": "2022-12-31", "filed": "2023-02-15", "form": "10-K", "accn": "0001-23-000001", "val": 2500},
+                            {"end": "2023-12-31", "filed": "2024-02-20", "form": "10-K", "accn": "0001-24-000001", "val": 4000},
+                        ]
+                    }
+                },
+            }
+        },
+    }
+    # On 2024-01-15, FY2023 10-K (filed 2024-02-20) was NOT yet filed -> must return FY2022!
+    pit = server.financial_parse_sec_facts(sec_payload, as_of="2024-01-15")
+    assert pit["success"] is True
+    assert pit["period"] == "2022-12-31"
+    assert pit["income_statement"]["revenue"] == 1000
+
+    bad = server.financial_backtest(bars, as_of="2099-01-01")
+    assert bad["success"] is False
+    assert bad["error_code"] == "invalid_input"

@@ -192,7 +192,7 @@ def _cached_json(url, deadline, ttl):
     return payload, retrieved, False
 
 
-def fetch_annual_statements(symbol: str, *, timeout: float = 10) -> dict:
+def fetch_annual_statements(symbol: str, *, timeout: float = 10, as_of: date | None = None) -> dict:
     if not re.fullmatch(r'[A-Z][A-Z0-9.-]{0,9}', symbol):
         raise SECError('sec_invalid_ticker')
     deadline = time.monotonic() + timeout
@@ -212,6 +212,8 @@ def fetch_annual_statements(symbol: str, *, timeout: float = 10) -> dict:
         raise SECError('sec_invalid_response') from None
     if returned_cik != cik:
         raise SECError('sec_company_mismatch')
-    result = parse_annual_statements(payload)
+    result = parse_annual_statements(payload, today=as_of)
     result.update(source_url=url, retrieved_at=retrieved, cache_hit=cached, symbol=symbol)
+    if as_of is not None:
+        result['as_of'] = as_of.isoformat()
     return result

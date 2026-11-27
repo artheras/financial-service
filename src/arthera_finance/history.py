@@ -54,7 +54,7 @@ def ashare_code(symbol):
     return match.group(1)
 
 
-def ashare_history(symbol, days=365, adjust="qfq"):
+def ashare_history(symbol, days=365, adjust="qfq", as_of=None):
     code = ashare_code(symbol)
     if type(days) is not int or not 1 <= days <= 3650:
         raise ValueError("days must be an integer from 1 to 3650")
@@ -64,14 +64,15 @@ def ashare_history(symbol, days=365, adjust="qfq"):
         import akshare as ak
     except Exception:  # a partial akshare install can raise more than ImportError
         return {"success": False, "error_code": "dependency_missing", "error": "Install arthera-financial-service[cn]"}
-    end = date.today()
+    end = as_of or date.today()
+    end_iso = end.isoformat()
     frame = ak.stock_zh_a_hist(symbol=code, period="daily", start_date=(end - timedelta(days=days)).strftime("%Y%m%d"),
                                end_date=end.strftime("%Y%m%d"), adjust=ADJUST[adjust])
     rows, extra, dropped = [], [], 0
     for record in ([] if frame is None or frame.empty else frame.to_dict("records")):
         day = str(record.get("日期", ""))[:10]
         bar = _bar(day, record.get("开盘"), record.get("最高"), record.get("最低"), record.get("收盘"), record.get("成交量"))
-        if bar is None or len(day) != 10:
+        if bar is None or len(day) != 10 or (as_of is not None and day > end_iso):
             dropped += 1
             continue
         rows.append(bar)
@@ -80,12 +81,20 @@ def ashare_history(symbol, days=365, adjust="qfq"):
     if not rows:
         return {"success": False, "error_code": "empty_history", "error": "No daily bars were returned for this code"}
     rows, extra = rows[-2000:], extra[-2000:]
+    limitations = [
+        "Volume is in lots (100 shares) as published.",
+        "qfq prices are forward-adjusted: past bars change after each new dividend or split.",
+        "Suspended days have no bar. At most the last 2000 bars are returned.",
+    ]
+    if as_of is not None and adjust == "qfq":
+        limitations.append(
+            "Point-in-time note: prefer adjust='none' or 'hfq' when backtesting across ex-dividend dates so future corporate actions do not rescale historical bars."
+        )
     return {"success": True, "symbol": code, "data": rows, "extra": extra, "source": "akshare (eastmoney)",
-            "as_of": rows[-1]["date"], "interval": "1d", "adjusted": adjust, "dropped_rows": dropped,
+            "as_of": rows[-1]["date"], "requested_as_of": as_of.isoformat() if as_of else None,
+            "interval": "1d", "adjusted": adjust, "dropped_rows": dropped,
             "retrieved_at": _now(),
-            "limitations": ["Volume is in lots (100 shares) as published.",
-                            "qfq prices are forward-adjusted: past bars change after each new dividend or split.",
-                            "Suspended days have no bar. At most the last 2000 bars are returned."]}
+            "limitations": limitations}
 
 
 def crypto_ohlcv(symbol="BTC/USDT", exchange="binance", timeframe="1d", limit=200):

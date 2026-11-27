@@ -38,7 +38,22 @@ def bounded_json(value, limit=1_000_000):
     return raw
 
 
-def analyze_statements(company_name="", financials=None):
+def parse_as_of(as_of: str = "") -> date | None:
+    if not as_of:
+        return None
+    if not isinstance(as_of, str) or len(as_of) != 10:
+        raise ValueError("as_of must be an ISO YYYY-MM-DD date")
+    try:
+        parsed = date.fromisoformat(as_of)
+    except ValueError as exc:
+        raise ValueError("as_of must be an ISO YYYY-MM-DD date") from exc
+    if parsed.isoformat() != as_of or parsed > date.today():
+        raise ValueError("as_of must be a valid non-future ISO YYYY-MM-DD date")
+    return parsed
+
+
+def analyze_statements(company_name="", financials=None, as_of=""):
+    cutoff = parse_as_of(as_of)
     if financials is not None and not isinstance(financials, dict):
         raise ValueError("financials must be an object")
     bounded_json(financials, 65536)
@@ -46,7 +61,7 @@ def analyze_statements(company_name="", financials=None):
         raise ValueError("company_name must be at most 80 characters")
     return tool_analyze_financial_statements({
         "company_name": company_name, "financials": financials or {},
-        "network_enabled": network_enabled(),
+        "network_enabled": network_enabled(), "as_of": cutoff,
     })
 
 
@@ -70,7 +85,9 @@ def risk_metrics(equity, periods_per_year=252):
 
 
 def backtest(data, strategy="buy_hold", starting_cash=100000, commission=0.0005,
-             slippage=0.0005, fast=10, slow=30):
+             slippage=0.0005, fast=10, slow=30, as_of=""):
+    cutoff = parse_as_of(as_of)
+    cutoff_iso = cutoff.isoformat() if cutoff is not None else None
     raw = bounded_json(data)
     if not isinstance(data, dict) or not 1 <= len(data) <= 32:
         raise ValueError("data requires 1..32 symbols")
@@ -100,7 +117,10 @@ def backtest(data, strategy="buy_hold", starting_cash=100000, commission=0.0005,
             if h < max(o, c, l) or l > min(o, c, h):
                 raise ValueError("OHLC values are inconsistent")
             volume = finite(row.get("volume", 0), "volume", 0, 1e18)
-            converted.append(Bar(day, o, h, l, c, volume))
+            if cutoff_iso is None or day <= cutoff_iso:
+                converted.append(Bar(day, o, h, l, c, volume))
+        if len(converted) < 2:
+            raise ValueError("Each symbol requires at least 2 bars on or before as_of")
         bars[symbol] = converted
     kwargs = {"fast": fast, "slow": slow} if strategy == "sma_cross" else {}
     chosen = get_strategy(strategy, **kwargs)
@@ -109,16 +129,20 @@ def backtest(data, strategy="buy_hold", starting_cash=100000, commission=0.0005,
     # Keep tool responses bounded; full series remains reproducible from input.
     result["equity_curve"] = result["equity_curve"][-100:]
     result["trades"] = result["trades"][-100:]
-    return {"success": True, "simulation": True, "source": "caller-supplied bars",
-            "input_sha256": hashlib.sha256(raw).hexdigest(), "result": result,
-            "output_tail_limit": 100}
+    out = {"success": True, "simulation": True, "source": "caller-supplied bars",
+           "input_sha256": hashlib.sha256(raw).hexdigest(), "result": result,
+           "output_tail_limit": 100}
+    if cutoff_iso is not None:
+        out["as_of"] = cutoff_iso
+    return out
 
 
 def resolve_symbol(query: str) -> dict:
     return symbol_resolver.resolve_symbol(query, allow_network=network_enabled())
 
 
-def market_history(symbol, days=90):
+def market_history(symbol, days=90, as_of=""):
+    cutoff = parse_as_of(as_of)
     if not network_enabled():
         return {"success": False, "error_code": "network_disabled",
                 "error": "The host must explicitly enable FINANCIAL_SERVICE_NETWORK=1"}
@@ -134,6 +158,7 @@ def market_history(symbol, days=90):
         return {"success": False, "error_code": "dependency_missing",
                 "error": "Install arthera-financial-service[market]"}
     import time
+    end_day = cutoff or date.today()
     deadline = time.monotonic() + 20
     class BoundedSession(Session):
         def request(self, method, url, **kwargs):
@@ -144,15 +169,27 @@ def market_history(symbol, days=90):
             return super().request(method, url, **kwargs)
     with BoundedSession(impersonate="chrome") as session:
         ticker = yf.Ticker(symbol, session=session)
-        frame = ticker.history(start=(date.today() - timedelta(days=days)).isoformat(), interval="1d", auto_adjust=False)
+        hist_kwargs = {
+            "start": (end_day - timedelta(days=days)).isoformat(),
+            "interval": "1d",
+            "auto_adjust": False,
+        }
+        if cutoff is not None:
+            hist_kwargs["end"] = (cutoff + timedelta(days=1)).isoformat()
+        frame = ticker.history(**hist_kwargs)
     if frame.empty:
         return {"success": False, "error_code": "empty_history", "error": "No history returned"}
+    end_iso = end_day.isoformat()
     rows = [{"date": str(idx.date()), **{k: finite(row[col], col, 0)
              for k, col in (("open", "Open"), ("high", "High"), ("low", "Low"),
                             ("close", "Close"), ("volume", "Volume"))}}
-            for idx, row in frame.tail(2000).iterrows()]
+            for idx, row in frame.tail(2000).iterrows()
+            if cutoff is None or str(idx.date()) <= end_iso]
+    if not rows:
+        return {"success": False, "error_code": "empty_history", "error": "No history returned on or before as_of"}
     return {"success": True, "symbol": symbol, "data": rows, "source": "yfinance",
-            "as_of": rows[-1]["date"], "interval": "1d", "adjusted": False,
+            "as_of": rows[-1]["date"], "requested_as_of": cutoff.isoformat() if cutoff else None,
+            "interval": "1d", "adjusted": False,
             "retrieved_at": datetime.now(timezone.utc).isoformat(),
             "limitations": ["Historical daily bars; not a live quote or a total-return series."]}
 
@@ -368,9 +405,10 @@ def market_indices():
 
 # ── A-share and crypto history ───────────────────────────────────────────────
 
-def ashare_history(symbol, days=365, adjust="qfq"):
+def ashare_history(symbol, days=365, adjust="qfq", as_of=""):
+    cutoff = parse_as_of(as_of)
     from . import history
-    return _network_gate() or history.ashare_history(symbol, days, adjust)
+    return _network_gate() or history.ashare_history(symbol, days, adjust, as_of=cutoff)
 
 
 def crypto_ohlcv(symbol="BTC/USDT", exchange="binance", timeframe="1d", limit=200):
@@ -380,9 +418,10 @@ def crypto_ohlcv(symbol="BTC/USDT", exchange="binance", timeframe="1d", limit=20
 
 # ── News headlines ───────────────────────────────────────────────────────────
 
-def news(symbol="", query="", limit=10, days=7):
+def news(symbol="", query="", limit=10, days=7, as_of=""):
+    cutoff = parse_as_of(as_of)
     from . import news as headlines
-    return _network_gate() or headlines.news(symbol, query, limit, days)
+    return _network_gate() or headlines.news(symbol, query, limit, days, as_of=cutoff)
 
 
 # ── Futures and Treasury yields ──────────────────────────────────────────────

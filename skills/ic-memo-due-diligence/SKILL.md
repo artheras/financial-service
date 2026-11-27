@@ -22,6 +22,12 @@ Investment Committee (IC) memo.
 3. **Human approval on risk gates**: Any `APPROVAL_REQUIRED` or `BLOCK` verdict
    from `financial_pretrade_risk_check` must be surfaced verbatim at the top of
    the memo.
+4. **Point-in-time (`as_of`) anti-lookahead discipline**: Whenever evaluating a
+   historical thesis or backtest date `YYYY-MM-DD`, pass `as_of="YYYY-MM-DD"` to
+   `financial_sec_filing_monitor`, `financial_parse_sec_facts`,
+   `financial_analyze_statements`, `financial_market_history`,
+   `financial_ashare_history`, `financial_news`, and `financial_backtest` so no
+   filings, bars, or headlines published after `as_of` leak into the analysis.
 
 ## Standard 6-Step Due Diligence Sequence
 

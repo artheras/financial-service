@@ -290,8 +290,11 @@ def due_diligence_red_flags(
     }
 
 
-def sec_filing_monitor(symbol: str, limit: int = 20) -> dict[str, Any]:
+def sec_filing_monitor(symbol: str, limit: int = 20, as_of: str = "") -> dict[str, Any]:
     """Fetch recent official SEC EDGAR filings (10-K, 10-Q, 8-K, Form 4, SC 13D/G) with sec.gov URLs."""
+    from .api import parse_as_of
+    cutoff = parse_as_of(as_of)
+    cutoff_iso = cutoff.isoformat() if cutoff is not None else None
     if not network_enabled():
         return {
             "success": False,
@@ -333,6 +336,9 @@ def sec_filing_monitor(symbol: str, limit: int = 20) -> dict[str, Any]:
     for i, form in enumerate(forms):
         if form not in tracked:
             continue
+        fdate = dates[i] if i < len(dates) else None
+        if cutoff_iso is not None and (not fdate or fdate > cutoff_iso):
+            continue
         acc = accessions[i] if i < len(accessions) else ""
         acc_clean = acc.replace("-", "")
         doc = docs[i] if i < len(docs) else ""
@@ -343,7 +349,7 @@ def sec_filing_monitor(symbol: str, limit: int = 20) -> dict[str, Any]:
         )
         entry = {
             "form": form,
-            "filing_date": dates[i] if i < len(dates) else None,
+            "filing_date": fdate,
             "accession_number": acc,
             "description": descs[i] if i < len(descs) else "",
             "sec_url": url,
@@ -362,7 +368,7 @@ def sec_filing_monitor(symbol: str, limit: int = 20) -> dict[str, Any]:
         if collected >= lim:
             break
 
-    return {
+    out = {
         "success": True,
         "symbol": sym,
         "cik": cik,
@@ -372,3 +378,6 @@ def sec_filing_monitor(symbol: str, limit: int = 20) -> dict[str, Any]:
         "counts": {k: len(v) for k, v in buckets.items()},
         "filings": buckets,
     }
+    if cutoff_iso is not None:
+        out["as_of"] = cutoff_iso
+    return out

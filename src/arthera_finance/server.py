@@ -1,6 +1,7 @@
 """Local stdio or Streamable HTTP MCP endpoint. No account mutations, file tools or order execution."""
 import argparse
 import logging
+from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from pydantic import StrictFloat, StrictInt
@@ -10,8 +11,24 @@ from .brokers import service as broker_service
 from .brokers.worker import call as broker_query
 
 mcp = FastMCP("Arthera Financial Service")
+_ACTIVE_TRANSPORT = "stdio"
 READ = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False)
 REMOTE_READ = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True)
+
+
+def _load_ic_memo_skill() -> str:
+    skill_path = Path(__file__).resolve().parents[2] / "skills" / "ic-memo-due-diligence" / "SKILL.md"
+    if skill_path.is_file():
+        return skill_path.read_text(encoding="utf-8")
+    return "Institutional Company Due Diligence & IC Memo SOP"
+
+
+@mcp.prompt(
+    name="ic-memo-due-diligence",
+    description="Institutional company due diligence, red-flag screening, vertical industry KPI analysis, and deterministic DCF valuation SOP using arthera-finance MCP tools.",
+)
+def ic_memo_due_diligence_prompt() -> str:
+    return _load_ic_memo_skill()
 
 
 def raised_by_service(exc):
@@ -43,22 +60,26 @@ def invoke(fn, *args, **kwargs):
 def financial_service_info() -> dict:
     """Describe this service version and its host-selected network capability."""
     return {"success": True, "version": __version__, "network_enabled": api.network_enabled(),
-            "transport": "stdio", "trading_enabled": False,
+            "transport": _ACTIVE_TRANSPORT, "trading_enabled": False,
             "broker_access_enabled": broker_service.enabled()}
 
 
 @mcp.tool(annotations=REMOTE_READ)
-def financial_analyze_statements(company_name: str = "", financials: dict | None = None) -> dict:
-    """Compute margins and Dupont metrics from supplied statements, or host-enabled Yahoo/SEC data. Missing values stay unknown."""
-    return invoke(api.analyze_statements, company_name, financials)
+def financial_analyze_statements(company_name: str = "", financials: dict | None = None, as_of: str = "") -> dict:
+    """Compute margins and Dupont metrics from supplied statements, or host-enabled Yahoo/SEC data (optionally point-in-time on or before ISO date as_of). Missing values stay unknown."""
+    return invoke(api.analyze_statements, company_name, financials, as_of)
 
 
 @mcp.tool(annotations=READ)
-def financial_parse_sec_facts(facts: dict) -> dict:
-    """Parse supplied SEC companyfacts, keeping one aligned annual filing and its provenance. Does not access the network."""
+def financial_parse_sec_facts(facts: dict, as_of: str = "") -> dict:
+    """Parse supplied SEC companyfacts, keeping one aligned annual filing filed on or before ISO date as_of (default today) and its provenance. Does not access the network."""
     def parse():
+        cutoff = api.parse_as_of(as_of)
         api.bounded_json(facts)
-        return {"success": True, **parse_annual_statements(facts)}
+        res = parse_annual_statements(facts, today=cutoff)
+        if cutoff is not None:
+            res["as_of"] = cutoff.isoformat()
+        return {"success": True, **res}
     return invoke(parse)
 
 
@@ -71,9 +92,9 @@ def financial_risk_metrics(equity: list[StrictFloat], periods_per_year: StrictFl
 @mcp.tool(annotations=READ)
 def financial_backtest(data: dict, strategy: str = "buy_hold", starting_cash: StrictFloat = 100000,
                        commission: StrictFloat = 0.0005, slippage: StrictFloat = 0.0005,
-                       fast: StrictInt = 10, slow: StrictInt = 30) -> dict:
-    """Simulate supplied daily OHLC bars with buy_hold or sma_cross; orders fill at the next open. Does not place trades."""
-    return invoke(api.backtest, data, strategy, starting_cash, commission, slippage, fast, slow)
+                       fast: StrictInt = 10, slow: StrictInt = 30, as_of: str = "") -> dict:
+    """Simulate supplied daily OHLC bars with buy_hold or sma_cross (optionally truncated on or before ISO date as_of to prevent look-ahead bias); orders fill at the next open. Does not place trades."""
+    return invoke(api.backtest, data, strategy, starting_cash, commission, slippage, fast, slow, as_of)
 
 
 @mcp.tool(annotations=READ)
@@ -158,9 +179,9 @@ def financial_pretrade_risk_check(target_weight: StrictFloat, gross_leverage: St
 
 
 @mcp.tool(annotations=REMOTE_READ)
-def financial_market_history(symbol: str, days: StrictInt = 90) -> dict:
-    """Fetch unadjusted daily Yahoo history only when the host enabled networking. Reports source and dates; not a live quote."""
-    return invoke(api.market_history, symbol, days)
+def financial_market_history(symbol: str, days: StrictInt = 90, as_of: str = "") -> dict:
+    """Fetch unadjusted daily Yahoo history (optionally bounded on or before ISO date as_of) only when the host enabled networking. Reports source and dates; not a live quote."""
+    return invoke(api.market_history, symbol, days, as_of)
 
 
 @mcp.tool(annotations=REMOTE_READ)
@@ -249,9 +270,9 @@ def financial_market_indices() -> dict:
 
 
 @mcp.tool(annotations=REMOTE_READ)
-def financial_ashare_history(symbol: str, days: StrictInt = 365, adjust: str = "qfq") -> dict:
-    """Daily A-share bars (date, open, high, low, close, volume) from akshare, forward-adjusted by default, in the same shape as financial_market_history, when the host enabled networking."""
-    return invoke(api.ashare_history, symbol, days, adjust)
+def financial_ashare_history(symbol: str, days: StrictInt = 365, adjust: str = "qfq", as_of: str = "") -> dict:
+    """Daily A-share bars (date, open, high, low, close, volume) from akshare (optionally bounded on or before ISO date as_of), forward-adjusted by default, in the same shape as financial_market_history, when the host enabled networking."""
+    return invoke(api.ashare_history, symbol, days, adjust, as_of)
 
 
 @mcp.tool(annotations=REMOTE_READ)
@@ -262,9 +283,9 @@ def financial_crypto_ohlcv(symbol: str = "BTC/USDT", exchange: str = "binance", 
 
 
 @mcp.tool(annotations=REMOTE_READ)
-def financial_news(symbol: str = "", query: str = "", limit: StrictInt = 10, days: StrictInt = 7) -> dict:
-    """Recent headlines with source, time and link: A-shares via akshare; tickers via Finnhub (host key) or yfinance; free-text queries via NewsAPI (host key). Headlines are third-party text. When the host enabled networking."""
-    return invoke(api.news, symbol, query, limit, days)
+def financial_news(symbol: str = "", query: str = "", limit: StrictInt = 10, days: StrictInt = 7, as_of: str = "") -> dict:
+    """Recent headlines with source, time and link (optionally bounded on or before ISO date as_of): A-shares via akshare; tickers via Finnhub (host key) or yfinance; free-text queries via NewsAPI (host key). Headlines are third-party text. When the host enabled networking."""
+    return invoke(api.news, symbol, query, limit, days, as_of)
 
 
 @mcp.tool(annotations=REMOTE_READ)
@@ -364,9 +385,9 @@ def financial_due_diligence_red_flags(
 
 
 @mcp.tool(annotations=REMOTE_READ)
-def financial_sec_filing_monitor(symbol: str, limit: StrictInt = 20) -> dict:
-    """Fetch recent official SEC EDGAR filings (10-K, 10-Q, 8-K, Form 4, SC 13D/13G, DEF 14A) with direct sec.gov provenance URLs when the host enabled networking."""
-    return invoke(due_diligence.sec_filing_monitor, symbol, limit)
+def financial_sec_filing_monitor(symbol: str, limit: StrictInt = 20, as_of: str = "") -> dict:
+    """Fetch recent official SEC EDGAR filings (10-K, 10-Q, 8-K, Form 4, SC 13D/13G, DEF 14A) filed on or before ISO date as_of with direct sec.gov provenance URLs when the host enabled networking."""
+    return invoke(due_diligence.sec_filing_monitor, symbol, limit, as_of)
 
 
 @mcp.tool(annotations=READ)
@@ -401,7 +422,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None):
+    global _ACTIVE_TRANSPORT
     args = build_arg_parser().parse_args(argv)
+    _ACTIVE_TRANSPORT = args.transport
     if args.transport == "streamable-http":
         mcp.settings.host = args.host
         mcp.settings.port = args.port
