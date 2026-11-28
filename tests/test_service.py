@@ -108,3 +108,36 @@ async def test_real_mcp_broker_queries_use_only_host_profiles(tmp_path):
                 assert json.loads(result.content[0].text)["data"] == []
             result = await session.call_tool("financial_broker_account", {"connection_id": "other-user"})
             assert json.loads(result.content[0].text)["error_code"] == "connection_unavailable"
+
+
+def test_streamable_http_bearer_auth_and_non_loopback_guard():
+    import asyncio
+    import pytest
+    from arthera_finance.server import _wrap_bearer_auth, main as server_main
+
+    with pytest.raises(SystemExit):
+        server_main(["--transport", "streamable-http", "--host", "0.0.0.0"])
+
+    async def dummy_app(scope, receive, send):
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b"ok"})
+
+    wrapped = _wrap_bearer_auth(dummy_app, "fin-secret")
+
+    async def _call(auth_header: str | None) -> int:
+        statuses = []
+
+        async def receive():
+            return {"type": "http.request", "body": b""}
+
+        async def send(msg):
+            if msg["type"] == "http.response.start":
+                statuses.append(msg["status"])
+
+        headers = [(b"authorization", auth_header.encode())] if auth_header else []
+        await wrapped({"type": "http", "headers": headers}, receive, send)
+        return statuses[0]
+
+    assert asyncio.run(_call(None)) == 401
+    assert asyncio.run(_call("Bearer wrong")) == 401
+    assert asyncio.run(_call("Bearer fin-secret")) == 200

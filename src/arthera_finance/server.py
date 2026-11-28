@@ -1,6 +1,7 @@
 """Local stdio or Streamable HTTP MCP endpoint. No account mutations, file tools or order execution."""
 import argparse
 import logging
+import os
 from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
@@ -418,7 +419,39 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=8765,
         help="Bind port for streamable-http transport (default: 8765).",
     )
+    parser.add_argument(
+        "--auth-token",
+        default=os.environ.get("FINANCIAL_SERVICE_BEARER_TOKEN", ""),
+        help="Optional Bearer token required on streamable-http requests (or set FINANCIAL_SERVICE_BEARER_TOKEN).",
+    )
     return parser
+
+
+def _wrap_bearer_auth(app, token: str):
+    """ASGI middleware enforcing constant-time Bearer token auth on HTTP MCP requests."""
+    import hmac
+
+    expected = f"Bearer {token}".encode("utf-8")
+
+    async def asgi_app(scope, receive, send):
+        if scope["type"] == "http":
+            headers = dict(scope.get("headers") or [])
+            provided = headers.get(b"authorization", b"")
+            if not hmac.compare_digest(provided, expected):
+                body = b'{"error":"Unauthorized"}'
+                await send({
+                    "type": "http.response.start",
+                    "status": 401,
+                    "headers": [
+                        (b"content-type", b"application/json"),
+                        (b"content-length", str(len(body)).encode("ascii")),
+                    ],
+                })
+                await send({"type": "http.response.body", "body": body})
+                return
+        await app(scope, receive, send)
+
+    return asgi_app
 
 
 def main(argv: list[str] | None = None):
@@ -428,7 +461,18 @@ def main(argv: list[str] | None = None):
     if args.transport == "streamable-http":
         mcp.settings.host = args.host
         mcp.settings.port = args.port
-        mcp.run(transport="streamable-http")
+        token = (args.auth_token or "").strip()
+        if args.host not in ("127.0.0.1", "localhost", "::1") and not token:
+            raise SystemExit(
+                "Refusing to bind streamable-http to a non-loopback host without --auth-token or FINANCIAL_SERVICE_BEARER_TOKEN."
+            )
+        if token:
+            import uvicorn
+
+            app = _wrap_bearer_auth(mcp.streamable_http_app(), token)
+            uvicorn.run(app, host=args.host, port=args.port)
+        else:
+            mcp.run(transport="streamable-http")
     else:
         mcp.run(transport="stdio")
 
